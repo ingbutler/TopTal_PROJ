@@ -7,17 +7,7 @@ using System.Threading.Tasks;
 namespace DBRuns
 {
 
-    public struct Roles
-    {
-        public const string ADMIN = "ADMIN";
-        public const string MANAGER = "MANAGER";
-        public const string USER = "USER";
-    }
-
-
-
-
-    public class BizLogic
+    public class Utils
     {
 
         public static async Task<string> SendMailAsync(

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -36,8 +37,11 @@ namespace DBRunsE2ETests
             string body;
 
 
+
             // APP LAUNCH
-            System.Diagnostics.Process.Start(Settings.AppPath);
+            var psi = new ProcessStartInfo(Settings.AppPath);
+            psi.UseShellExecute = true;
+            Process.Start(psi);
 
 
 
@@ -50,9 +54,10 @@ namespace DBRunsE2ETests
                     }
                 ";
 
-            await Utils.PostRequest(body);
+            await Utils.PostRequest("Users", "SignUp", body);
 
 
+            // Check needed that the right email is read, that is, if it has been received after it has been created
             string VerificationLink = Utils.RetrieveVerificationLink();
 
 
@@ -61,20 +66,6 @@ namespace DBRunsE2ETests
             #endregion SET FIRST USER (ADMIN)
 
         }
-
-
-
-
-        //private static async Task<List<Repository>> ProcessRepositories()
-        //{
-        //    client.DefaultRequestHeaders.Accept.Clear();
-        //    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
-        //    client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
-
-        //    var streamTask = client.GetStreamAsync("https://api.github.com/orgs/dotnet/repos");
-        //    var repositories = await JsonSerializer.DeserializeAsync<List<Repository>>(await streamTask);
-        //    return repositories;
-        //}
 
     }
 

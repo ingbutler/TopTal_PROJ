@@ -41,7 +41,7 @@ namespace DBRunsE2ETests
 
 
 
-        public static async Task PostRequest(string body)
+        public static async Task PostRequest(string controller, string action, string body)
         {
             client.DefaultRequestHeaders
                   .Accept
@@ -49,14 +49,14 @@ namespace DBRunsE2ETests
 
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "relativeAddress");
 
-            request.Content =               //CONTENT-TYPE header
+            request.Content =
                 new StringContent(
                     body,
                     Encoding.UTF8,
                     "application/json"
                 );
 
-            await client.PostAsync(Settings.AppUri + "Users", request.Content)
+            await client.PostAsync(Settings.AppUri + controller + (String.IsNullOrEmpty(action) ? "" : ("/" + action)), request.Content)
                   .ContinueWith(responseTask =>
                   {
                       Console.WriteLine("Response: {0}", responseTask.Result);

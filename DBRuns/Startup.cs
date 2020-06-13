@@ -36,6 +36,7 @@ namespace DBRuns
         {
             services.AddDbContext<DBRunContext>(opt => opt.UseInMemoryDatabase("DBRuns"));
             services.AddControllers();
+
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 

@@ -27,6 +27,8 @@ namespace DBRuns.Services
 
 
 
+        #region DATA ACCESS LAYER
+
         public async Task<IEnumerable<User>> GetUserAsync()
         {
             return await Context.Users.ToListAsync();
@@ -51,12 +53,6 @@ namespace DBRuns.Services
         public async Task<int> InsertUserAsync(User user)
         {
             user.Id = Guid.NewGuid();
-            user.IsVerified = false;
-
-            if (!UsersExist())
-                user.Role = Roles.ADMIN;
-            else
-                user.Role = Roles.USER;
 
             Context.Users.Add(user);
 
@@ -114,7 +110,7 @@ namespace DBRuns.Services
             string emailBody = "<a href='" + callbackUrl + "'>Please click Here to confirm your email</a>";
 
             await
-                BizLogic.SendMailAsync(
+                Utils.SendMailAsync(
                     "smtps.aruba.it",
                     587,
                     "info@elidentgroup.it",
@@ -148,6 +144,29 @@ namespace DBRuns.Services
             Context.Entry(user).State = EntityState.Modified;
             return await Context.SaveChangesAsync();
         }
+
+        #endregion DATA ACCESS LAYER
+
+
+
+
+        #region BUSINESS LOGIC
+
+        public async Task<int> SignupAsync(User user)
+        {
+            user.IsVerified = false;
+
+            if (!UsersExist())
+                user.Role = Roles.ADMIN;
+            else
+                user.Role = Roles.USER;
+
+            return await InsertUserAsync(user);
+        }
+
+
+        #endregion BUSINESS LOGIC
+
 
     }
 

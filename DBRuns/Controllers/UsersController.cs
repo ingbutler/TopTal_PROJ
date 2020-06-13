@@ -43,27 +43,31 @@ namespace DBRuns.Controllers
 
 
 
-        // POST: api/Users
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        // POST: api/Users/SignUp
+        [HttpPost("[action]")]
+        public async Task<ActionResult<User>> SignUp(SignUpData signUpData)
         {
+            User user =
+                new User()
+                {
+                    Email = signUpData.Email,
+                    Password = signUpData.Password
+                };
 
-            // MAY BE REPEATED TO RESEND MAIL
-            User exUser = await UserService.GetUserByEmailAsync(user.Email);
-            if (exUser == null)
+            // May be repeated to resend mail
+            User existingUser = await UserService.GetUserByEmailAsync(user.Email);
+            if (existingUser == null)
             {
-                int result = await UserService.InsertUserAsync(user);
+                int result = await UserService.SignupAsync(user);
                 if (result == 0)
                     return Conflict("User already existing");
             }
-            else if(exUser.IsVerified)
+            else if(existingUser.IsVerified)
                 return Conflict("User already existing");
 
             Task task = UserService.SendVerificationMailAsync(user);
 
-            if (exUser == null)
+            if (existingUser == null)
                 return Ok("Check for verification mail");
             else
                 return Ok("Verification mail sent again. Check mail"); 
