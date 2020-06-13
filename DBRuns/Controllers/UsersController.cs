@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-//using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Routing;
 using DBRuns.Models;
 using DBRuns.Services;
@@ -18,14 +15,12 @@ namespace DBRuns.Controllers
     {
 
         private UserService UserService { get; }
-        //private readonly IActionContextAccessor ActionContextAccessor;
 
 
-        //public UsersController(UserService userService, IActionContextAccessor actionContextAccessor)
+
         public UsersController(UserService userService)
         {
             UserService = userService;
-            //ActionContextAccessor = actionContextAccessor;
         }
 
 
@@ -43,6 +38,7 @@ namespace DBRuns.Controllers
         [HttpGet("[action]/{id}")]
         public async Task VerifyUser(Guid id)
         {
+            await UserService.VerifyUserAsync(id);
         }
 
 

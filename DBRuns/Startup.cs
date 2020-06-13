@@ -1,13 +1,18 @@
+using System;
+using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
-using DBRuns.Data;
-using DBRuns.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using DBRuns.Data;
+using DBRuns.Middleware;
+using DBRuns.Services;
 
 namespace DBRuns
 {
@@ -36,6 +41,25 @@ namespace DBRuns
 
             services.AddTransient<RunService>();
             services.AddTransient<UserService>();
+
+            services.AddAuthentication(options => {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options => {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+
+                    //Importante: indicare lo stesso Issuer, Audience e chiave segreta
+                    //usati anche nel JwtTokenMiddleware
+                    ValidIssuer = "Issuer",
+                    ValidAudience = "Audience",
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MiaChiaveSegreta")),
+                    //Tolleranza sulla data di scadenza del token
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
         }
 
 
@@ -51,6 +75,10 @@ namespace DBRuns
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseMiddleware<JwtTokenMiddleware>();
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
