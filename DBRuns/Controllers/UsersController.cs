@@ -34,7 +34,7 @@ namespace DBRuns.Controllers
 
 
 
-        // GET: api/TodoItems/5
+        // GET: api/Users/VerifyUser/00000000-0000-0000-0000-000000000000
         [HttpGet("[action]/{id}")]
         public async Task VerifyUser(Guid id)
         {

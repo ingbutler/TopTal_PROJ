@@ -51,6 +51,12 @@ namespace DBRuns.Services
         public async Task<int> InsertUserAsync(User user)
         {
             user.Id = Guid.NewGuid();
+            user.IsVerified = false;
+
+            if (!UsersExist())
+                user.Role = Roles.ADMIN;
+            else
+                user.Role = Roles.USER;
 
             Context.Users.Add(user);
 
@@ -85,6 +91,13 @@ namespace DBRuns.Services
 
 
 
+        private bool UsersExist()
+        {
+            return Context.Users.Any();
+        }
+
+
+
         private bool UserExists(Guid id)
         {
             return Context.Users.Any(e => e.Id == id);
@@ -109,7 +122,7 @@ namespace DBRuns.Services
                     true,
                     true,
                     emailTitle,
-                    new List<string>() { "david.butler@webutler.com" },
+                    new List<string>() { user.Email },
                     null,
                     null,
                     "info@elidentgroup.it",
