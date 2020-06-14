@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using DBRuns.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using DBRuns.Models;
 
 namespace DBRuns.Controllers
 {
@@ -15,7 +15,7 @@ namespace DBRuns.Controllers
     {
         // POST api/Token
         [HttpPost]
-        public IActionResult GetToken([FromBody] TokenRequest tokenRequest)
+        public IActionResult GetToken([FromBody] TokenRequest_ELIMINARE tokenRequest)
         {
             //TokenRequest è una nostra classe contenente le proprietà Username e Password
             //Avvisiamo il client se non ha fornito tali valori
@@ -31,7 +31,7 @@ namespace DBRuns.Controllers
             }
 
             //Ok, l'utente ha fornito credenziali valide, creiamogli una ClaimsIdentity
-            var identity = new ClaimsIdentity(JwtBearerDefaults.AuthenticationScheme);
+            ClaimsIdentity identity = new ClaimsIdentity(JwtBearerDefaults.AuthenticationScheme);
             //Aggiungiamo uno o più claim relativi all'utente loggato
             identity.AddClaim(new Claim(ClaimTypes.Name, tokenRequest.Username));
             //Incapsuliamo l'identità in una ClaimsPrincipal l'associamo alla richiesta corrente

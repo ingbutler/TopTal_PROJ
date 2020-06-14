@@ -13,21 +13,14 @@ namespace DBRuns.Models
 
 
 
-    public class SignUpData
-    {
-        public string Email { get; set; }
-        public string Password { get; set; }
-    }
-
-
-
-
-    public class User : SignUpData
+    public class User
     {
         public Guid Id { get; set; }
+        public string Email { get; set; }
+        public string PwdHash { get; set; }
         public string Role { get; set; }
         public bool IsVerified { get; set; }
-        public int loginFail { get; set; }
+        public int SignInFailCount { get; set; }
     }
 
 }

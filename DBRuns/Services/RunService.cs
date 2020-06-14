@@ -32,13 +32,21 @@ namespace DBRuns.Services
 
 
 
-        public async Task<int> InsertRunAsync(Run run)
+        public async Task<int> InsertRunAsync(RunInput runInput)
         {
-            run.Id = Guid.NewGuid();
-            run.Date = DateTime.Today;
+            Run run =
+                new Run()
+                {
+                    Id = Guid.NewGuid(),
+                    Date = runInput.Date,
+                    Distance = runInput.Distance,
+                    TimeRun = runInput.TimeRun,
+                    Location = runInput.Location
+                };
+            
 
-            if (run.UserId == null)
-                throw new ArgumentNullException("User not specified");
+            //if (run.UserId == null)
+            //    throw new ArgumentNullException("User not specified");
 
             if (run.Distance < 0)
                 throw new ArgumentOutOfRangeException("Distance less than zero");

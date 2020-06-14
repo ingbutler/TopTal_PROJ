@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace DBRuns.Models
 {
 
-    public class TokenRequest
+    public class TokenRequest_ELIMINARE
     {
         [Required]
         public string Username { get; set; }

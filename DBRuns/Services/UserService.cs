@@ -104,7 +104,12 @@ namespace DBRuns.Services
         public async Task SendVerificationMailAsync(User user)
         {
             HttpRequest httpRequest = ActionContextAccessor.ActionContext.HttpContext.Request;
-            string callbackUrl = httpRequest.Scheme + "://" + httpRequest.Host + httpRequest.Path + "/VerifyUser/" + user.Id;
+
+            string path = httpRequest.Path.Value.ToLower();
+            path = path.Replace("signup", "");  // Remove action
+            path = path.Replace("signin", "");
+            
+            string callbackUrl = httpRequest.Scheme + "://" + httpRequest.Host + path + "VerifyUser/" + user.Id;
 
             string emailTitle = "Please confirm your account";
             string emailBody = "<a href='" + callbackUrl + "'>Please click Here to confirm your email</a>";
@@ -152,16 +157,40 @@ namespace DBRuns.Services
 
         #region BUSINESS LOGIC
 
-        public async Task<int> SignupAsync(User user)
+        public async Task<User> SignupAsync(SignData signData)
         {
-            user.IsVerified = false;
+            User user =
+                new User()
+                {
+                    Email = signData.Email,
+                    PwdHash = Utils.GetMd5Hash(signData.Password),
+                    IsVerified = false
+                };
 
-            if (!UsersExist())
+            if (!UsersExist())              // First user is admin
                 user.Role = Roles.ADMIN;
             else
                 user.Role = Roles.USER;
 
-            return await InsertUserAsync(user);
+            int result = await InsertUserAsync(user);
+            if (result == 1)
+                return user;
+            else
+                return null;
+        }
+
+
+
+        public async Task<User> CheckCredentials(string email, string password)
+        {
+            User user = await GetUserByEmailAsync(email);
+            if (user == null)
+                return null;
+
+            if (!Utils.VerifyMd5Hash(password, user.PwdHash))
+                return null;
+            else
+                return user;
         }
 
 
