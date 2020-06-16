@@ -39,14 +39,14 @@ namespace DBRunsE2ETests
 
         static async Task Main(string[] args)
         {
-
             HttpResponseMessage response;
             List<KeyValuePair<string, string>> headers;
             string body;
+            string token;
             Process dbRuns = null;
 
 
-            bool appDebug = false;
+            bool appDebug = true;
             if (appDebug)
                 Settings.AppUri = Settings.AppUriDebug;
             else
@@ -58,6 +58,9 @@ namespace DBRunsE2ETests
                 psi.UseShellExecute = true;
                 dbRuns = Process.Start(psi);
             }
+
+
+            goto signIn;
 
 
 
@@ -89,7 +92,7 @@ namespace DBRunsE2ETests
                 return;
             }
 
-            await Utils.GetRequest(VerificationLink);
+            await Utils.GetRequest(VerificationLink, null);
 
             Console.WriteLine("=====> FIRST USER'S MAIL VERIFIED");
             Console.WriteLine();
@@ -98,8 +101,9 @@ namespace DBRunsE2ETests
 
 
 
-            #region ADMIN SIGN-IN
 
+            #region ADMIN SIGN-IN
+signIn:
             Console.WriteLine("=====> ADMIN SIGNING IN");
             Console.WriteLine();
 
@@ -119,26 +123,37 @@ namespace DBRunsE2ETests
 
 
 
+
             #region ADMIN POSTING RUN
 
-            Console.WriteLine("=====> ADMIN POSTING RUN");
+            Console.WriteLine("=====> ADMIN POSTING RUNS");
             Console.WriteLine();
 
-            string token = response.Headers.GetValues("x-token").First();
-            headers = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("authorization", "Bearer " + token) };
+            token = response.Headers.GetValues("x-token").First();
 
             body =
                 @"
                     {
-                        ""Date"":""2020-06-16T19:06"",
-                        ""Distance"":3243,
-                        ""TimeRun"":1820,
-                        ""Location"":""Campi Bisenzio""
+                        ""Date"":""2020-06-14T19:06"",
+                        ""Distance"":12000,
+                        ""TimeRun"":3600,
+                        ""Location"":""Campi Bisenzio,IT""
                     }
                 ";
-            response = await Utils.PostRequest("Runs", null, headers, body);
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(token), body);
 
-            Console.WriteLine("=====> ADMIN POSTED RUN");
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-15T12:07"",
+                        ""Distance"":12000,
+                        ""TimeRun"":3430,
+                        ""Location"":""Campi Bisenzio,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(token), body);
+
+            Console.WriteLine("=====> ADMIN POSTED RUNS");
             Console.WriteLine();
 
             #endregion ADMIN POSTING RUN
@@ -146,8 +161,66 @@ namespace DBRunsE2ETests
 
 
 
+            #region LISTING RUNS
+
+            Console.WriteLine("=====> LISTING RUNS");
+            Console.WriteLine();
+
+            await Utils.GetRequest("Runs", null, GetBearerTokenHeader(token), null);
+
+            Console.WriteLine("=====> RUNS LISTED");
+            Console.WriteLine();
+
+            #endregion LISTING RUNS
+
+
+
+
+            #region ADMIN FILTERING USERS
+
+            Console.WriteLine("=====> ADMIN FILTERING USERS (THEMSELVES)");
+            Console.WriteLine();
+
+            string queryString = "filter=email eq '" + Settings.Email + "'";
+
+            await Utils.GetRequest("Users", null, GetBearerTokenHeader(token), queryString);
+
+            Console.WriteLine("=====> ADMIN FILTERED USERS (THEMSELVES)");
+            Console.WriteLine();
+
+            #endregion ADMIN FILTERING USERS
+
+
+
+
+            #region ADMIN EDITING USER
+
+            Console.WriteLine("=====> ADMIN EDITING USER (CHANGING EMAIL TO THEMSELVES)");
+            Console.WriteLine();
+
+            // To be able to create another user with same password...
+
+            // ================> TODO
+
+            Console.WriteLine("=====> ADMIN EDITED USER (CHANGING EMAIL TO THEMSELVES)");
+            Console.WriteLine();
+
+            #endregion ADMIN EDITING USER
+
+
+
+
+
+
             if (!appDebug)
                 dbRuns.Kill();
+        }
+
+
+
+        private static List<KeyValuePair<string, string>> GetBearerTokenHeader(string token)
+        {
+            return new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("authorization", "Bearer " + token) };
         }
 
     }

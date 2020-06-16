@@ -29,9 +29,20 @@ namespace DBRuns.Services
 
         #region DATA ACCESS LAYER
 
-        public async Task<IEnumerable<User>> GetUserAsync()
+        public async Task<IEnumerable<User>> GetUserAsync(string filter)
         {
-            return await Context.Users.ToListAsync();
+            String sql = $"select * from Users";
+            string[] parms;
+
+            List<string> columns = typeof(User).GetProperties().Select(x => x.Name).ToList();
+            string parsedFilter = Utils.ParseFilter(filter, columns, out parms);
+
+            if(filter != "")
+                sql += " where " + parsedFilter;
+
+            IQueryable<User> users = Context.Users.FromSqlRaw(sql, parms);
+
+            return await users.ToListAsync();
         }
 
 
@@ -61,11 +72,8 @@ namespace DBRuns.Services
 
 
 
-        public async Task<int> UpdateUserAsync(Guid id, User user)
+        public async Task<int> UpdateUserAsync(User user)
         {
-            if (id != user.Id)
-                throw new ArgumentException("Id not corresponding");
-
             Context.Entry(user).State = EntityState.Modified;
 
             return await Context.SaveChangesAsync();

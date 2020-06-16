@@ -34,7 +34,11 @@ namespace DBRuns
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<DBRunContext>(opt => opt.UseInMemoryDatabase("DBRuns"));
+            //services.AddDbContext<DBRunContext>(opt => opt.UseInMemoryDatabase("DBRuns"));
+            services.AddDbContext<DBRunContext>(options =>
+                options.UseSqlServer(
+                    Configuration.GetConnectionString("DefaultConnection")));
+
             services.AddControllers();
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

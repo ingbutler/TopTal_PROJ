@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using DBRuns.Data;
 using DBRuns.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace DBRuns.Services
 {
@@ -15,44 +18,62 @@ namespace DBRuns.Services
     {
 
         private readonly DBRunContext Context;
+        private readonly IConfiguration Configuration;
 
 
 
-        public RunService(DBRunContext context)
+        public RunService(DBRunContext context, IConfiguration configuration)
         {
             Context = context;
+            Configuration= configuration;
         }
 
 
 
-        public async Task<IEnumerable<Run>> GetRunAsync()
+        public async Task<IEnumerable<Run>> GetRunAsync(Guid? userId)
         {
-            return await Context.Runs.ToListAsync();
+            IQueryable<Run> runs = Context.Runs.FromSqlInterpolated($"select * from Runs");
+
+            if (userId != null)
+                runs = runs.Where(x => x.UserId == userId);
+
+            return await runs.ToListAsync();
         }
 
 
 
-        public async Task<int> InsertRunAsync(RunInput runInput)
+        public async Task<int> InsertRunAsync(Guid userId, RunInput runInput)
         {
+            if (runInput.Distance <= 0)
+                throw new ArgumentOutOfRangeException("Distance must be greater than zero");
+
+            if (runInput.TimeRun <= 0)
+                throw new ArgumentOutOfRangeException("Time must be greater than zero");
+
+
+            string weather = "";
+            string weatherReqUri = Configuration["WeatherByCityReq"];
+            weatherReqUri = weatherReqUri.Replace("{cityCountry}", runInput.Location);
+
+            using (HttpClient httpClient = new HttpClient())
+            {
+                weather = await httpClient.GetStringAsync(weatherReqUri);
+            }
+
+            if (weather.Length > 1000)          // Limitazione alla lunghezza della colonna nel db
+                weather = weather.Substring(0, 1000);
+
             Run run =
                 new Run()
                 {
                     Id = Guid.NewGuid(),
+                    UserId = userId,
                     Date = runInput.Date,
                     Distance = runInput.Distance,
                     TimeRun = runInput.TimeRun,
-                    Location = runInput.Location
+                    Location = runInput.Location,
+                    Weather = weather
                 };
-            
-
-            //if (run.UserId == null)
-            //    throw new ArgumentNullException("User not specified");
-
-            if (run.Distance < 0)
-                throw new ArgumentOutOfRangeException("Distance less than zero");
-
-            if (run.TimeRun < 0)
-                throw new ArgumentOutOfRangeException("Time less than zero");
 
             Context.Runs.Add(run);
             return await Context.SaveChangesAsync();

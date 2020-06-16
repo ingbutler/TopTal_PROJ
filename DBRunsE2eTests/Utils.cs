@@ -75,12 +75,12 @@ namespace DBRunsE2ETests
 
         public static async Task<HttpResponseMessage> PostRequest(string controller, string action, List<KeyValuePair<string, string>> headers, string body)
         {
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "relativeAddress");
-
-            if(headers != null)
-                headers.ForEach(x => request.Headers.Add(x.Key, x.Value));
-
+            HttpRequestMessage request = new HttpRequestMessage();
+            request.Method = HttpMethod.Post;
             request.RequestUri = new Uri(Settings.AppUri + controller + (String.IsNullOrEmpty(action) ? "" : ("/" + action)));
+
+            if (headers != null)
+                headers.ForEach(x => request.Headers.Add(x.Key, x.Value));
 
             request.Content =
                 new StringContent(
@@ -92,7 +92,7 @@ namespace DBRunsE2ETests
             HttpResponseMessage response = await client.SendAsync(request);
             Console.WriteLine($"Response: {response}");
             string contentStr = await response.Content.ReadAsStringAsync();
-            if(contentStr != "")
+            if(!String.IsNullOrEmpty(contentStr))
                 Console.Write($"Response content: {JValue.Parse(contentStr).ToString(Newtonsoft.Json.Formatting.Indented)}");
             Console.WriteLine();
             Console.WriteLine();
@@ -102,12 +102,27 @@ namespace DBRunsE2ETests
 
 
 
-        public static async Task GetRequest(string requestUri)
+        public static async Task GetRequest(string controller, string action, List<KeyValuePair<string, string>> headers, string queryString)
         {
-            HttpResponseMessage response = await client.GetAsync(requestUri);
+            string requestUri = Settings.AppUri + controller + (String.IsNullOrEmpty(action) ? "" : ("/" + action)) + (String.IsNullOrEmpty(queryString) ? "" : ("?" + queryString));
+            await GetRequest(requestUri, headers);
+        }
+
+
+
+        public static async Task GetRequest(string requestUri, List<KeyValuePair<string, string>> headers)
+        {
+            HttpRequestMessage request = new HttpRequestMessage();
+            request.Method = HttpMethod.Get;
+            request.RequestUri = new Uri(requestUri);
+
+            if (headers != null)
+                headers.ForEach(x => request.Headers.Add(x.Key, x.Value));
+
+            HttpResponseMessage response = await client.SendAsync(request);
             Console.WriteLine($"Response: {response}");
             string contentStr = await response.Content.ReadAsStringAsync();
-            if (contentStr != "")
+            if (!String.IsNullOrEmpty(contentStr))
                 Console.Write($"Response content: {JValue.Parse(contentStr).ToString(Newtonsoft.Json.Formatting.Indented)}");
             Console.WriteLine();
             Console.WriteLine();

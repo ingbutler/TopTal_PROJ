@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Mail;
-using System.Linq;
+using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace DBRuns
 {
@@ -135,6 +136,99 @@ namespace DBRuns
                 return true;
             else
                 return false;
+        }
+
+
+
+        public static Guid GetUserId(ClaimsPrincipal user)
+        {
+            return new Guid(((ClaimsIdentity)user.Identity).FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier).Value);
+        }
+
+
+
+        public static string GetUserRole(ClaimsPrincipal user)
+        {
+            return ((ClaimsIdentity)user.Identity).FindFirst(System.Security.Claims.ClaimTypes.Role).Value;
+        }
+
+
+
+        public static string ParseFilter(string filter, List<string> columns, out string[] parms)
+        {
+            Dictionary<string, string> conds =
+                new Dictionary<string, string>
+                {
+                    { "eq", "=" },
+                    { "ne", "<>" },
+                    { "lt", "<" },
+                    { "le", "<=" },
+                    { "gt", ">" },
+                    { "ge", ">" },
+                };
+            string pattern = @"(AND|OR|\(|\)|eq|lt|gt";
+
+            foreach (string column in columns)
+                pattern += "|" + column;
+
+            pattern += ")";
+
+
+            int start = 0;
+            int end = 0;
+            bool prevIsCondition = false;
+            int i = 0;
+            List<string> prms = new List<string>();
+            string newFilter = "";
+
+            foreach (Match match in Regex.Matches(filter, pattern, RegexOptions.IgnoreCase))
+            {
+                if (conds.ContainsKey(match.Value))
+                {
+                    // Beginning of a parameter value found
+                    newFilter += filter.Substring(start, (match.Index - start)).TrimEnd() + " " + conds[match.Value];
+                    start = match.Index + match.Value.Length;
+                    prevIsCondition = true;
+                }
+                else if (prevIsCondition)
+                {
+                    i++;
+                    end = match.Index;      // First match after condition: marks the end of a parameter value
+
+                    AddParam(prms, filter, start, end);
+                    newFilter += " {" + i.ToString() + "} " + match;
+                    prevIsCondition = false;
+                    start = end + match.Value.Length;
+                }
+            }
+
+            if(prevIsCondition)
+            {
+                end = filter.Length;
+                AddParam(prms, filter, start, end);
+                newFilter += " {" + i.ToString() + "}";
+            }
+            else
+                newFilter += filter.Substring(start, filter.Length - start);
+            
+            parms = prms.ToArray();
+
+            return newFilter;
+        }
+
+
+
+        private static void AddParam(List<string> prms, string filter, int start, int end)
+        {
+            string prm = filter.Substring(start, end - start).Trim();
+            
+            // Removing single quotes
+            if (prm[0] == '\'')
+                prm = prm.Substring(1);
+            if (prm[prm.Length - 1] == '\'')
+                prm = prm.Substring(0, prm.Length - 1);
+
+            prms.Add(prm);
         }
 
     }

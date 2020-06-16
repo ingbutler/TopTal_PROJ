@@ -31,9 +31,9 @@ namespace DBRuns.Controllers
 
         // GET: api/Users
         [HttpGet]
-        public async Task<IEnumerable<User>> GetUser()
+        public async Task<IEnumerable<User>> GetUser([FromQuery(Name = "filter")] string filter)
         {
-            return await UserService.GetUserAsync();
+            return await UserService.GetUserAsync(filter);
         }
 
 
@@ -92,10 +92,26 @@ namespace DBRuns.Controllers
             else
             {
                 var identity = new ClaimsIdentity(JwtBearerDefaults.AuthenticationScheme);
+                identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
                 identity.AddClaim(new Claim(ClaimTypes.Role, user.Role));
                 HttpContext.User = new ClaimsPrincipal(identity);
                 return NoContent();
             }
+        }
+
+
+
+        // PUT: api/TodoItems/5
+        [HttpPut("{id}")]
+        [Authorize(Roles = Roles.ADMIN)]
+        public async Task<IActionResult> PutUser(Guid id, User user)
+        {
+            if (id != user.Id)
+                return BadRequest();
+
+            int result = await UserService.UpdateUserAsync(user);
+
+            return NoContent();
         }
 
     }

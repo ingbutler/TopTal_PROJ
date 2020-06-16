@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using DBRuns.Models;
 using DBRuns.Services;
+using System.Security.Claims;
+using System;
 
 namespace DBRuns.Controllers
 {
@@ -28,9 +30,14 @@ namespace DBRuns.Controllers
 
         // GET: api/Runs
         [HttpGet]
+        [Authorize(Roles = Roles.ADMIN + "," + Roles.USER)]
         public async Task<IEnumerable<Run>> GetRun()
         {
-            return await RunService.GetRunAsync();
+            Guid? userId = null;
+            if (Utils.GetUserRole(this.User) != Roles.ADMIN)
+                userId = Utils.GetUserId(this.User);
+
+            return await RunService.GetRunAsync(userId);
         }
 
 
@@ -42,8 +49,11 @@ namespace DBRuns.Controllers
             if (!ModelState.IsValid)
                 return BadRequest();
 
-            await RunService.InsertRunAsync(runInput);
-
+            await RunService.InsertRunAsync(
+                    Utils.GetUserId(this.User),
+                    runInput
+                );
+            
             return NoContent();
         }
 
