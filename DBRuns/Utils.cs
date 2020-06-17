@@ -154,7 +154,7 @@ namespace DBRuns
 
 
 
-        public static string ParseFilter(string filter, List<string> columns, out string[] parms)
+        public static string ParseFilter(string filter, List<string> columns, out List<string> parms)
         {
             Dictionary<string, string> conds =
                 new Dictionary<string, string>
@@ -178,7 +178,7 @@ namespace DBRuns
             int end = 0;
             bool prevIsCondition = false;
             int i = 0;
-            List<string> prms = new List<string>();
+            parms = new List<string>();
             string newFilter = "";
 
             foreach (Match match in Regex.Matches(filter, pattern, RegexOptions.IgnoreCase))
@@ -195,7 +195,7 @@ namespace DBRuns
                     i++;
                     end = match.Index;      // First match after condition: marks the end of a parameter value
 
-                    AddParam(prms, filter, start, end);
+                    AddParam(parms, filter, start, end);
                     newFilter += " {" + i.ToString() + "} " + match;
                     prevIsCondition = false;
                     start = end + match.Value.Length;
@@ -205,13 +205,11 @@ namespace DBRuns
             if(prevIsCondition)
             {
                 end = filter.Length;
-                AddParam(prms, filter, start, end);
+                AddParam(parms, filter, start, end);
                 newFilter += " {" + i.ToString() + "}";
             }
             else
                 newFilter += filter.Substring(start, filter.Length - start);
-            
-            parms = prms.ToArray();
 
             return newFilter;
         }

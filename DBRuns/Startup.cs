@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using DBRuns.Data;
 using DBRuns.Middleware;
 using DBRuns.Services;
+using Newtonsoft.Json.Serialization;
 
 namespace DBRuns
 {
@@ -39,7 +40,11 @@ namespace DBRuns
                 options.UseSqlServer(
                     Configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson();
+                //.AddNewtonsoftJson(options =>
+                //{
+                //    options.SerializerSettings.ContractResolver = new DefaultContractResolver();
+                //});
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();

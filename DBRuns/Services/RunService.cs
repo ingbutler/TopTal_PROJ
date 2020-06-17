@@ -129,6 +129,55 @@ namespace DBRuns.Services
         }
 
 
+
+        public async Task<IEnumerable<ReportItem>> GetReportAsync(Guid userId)
+        {
+            string sql =
+                @"
+                    select
+                        tt.WeekStart
+                       ,tt.WeekNumber
+                       ,tt.Year
+                       ,tt.TotalTime
+                       ,tt.TotalDistance
+                       ,(tt.TotalDistance / tt.TotalTime) as AverageSpeed
+                    from
+	                    (
+                            select
+                                t.WeekStart
+                               ,t.WeekNumber
+                               ,t.Year
+                               ,sum(t.TimeRun) as TotalTime
+                               ,sum(t.Distance) as TotalDistance
+                            from
+	                            (
+		                            select
+		                                dateadd(dd, -(datepart(dw, Date) - 1), convert(date, Date)) as WeekStart
+		                               ,datepart(week, Date) as WeekNumber
+                                       ,year(Date) as Year
+                                       ,Distance
+                                       ,TimeRun
+		                            from
+			                            Runs
+                                    where
+                                        UserId = {0}
+	                            ) as t
+                            group by
+	                            t.WeekStart
+                               ,t.WeekNumber
+                               ,t.Year
+                        ) as tt
+                    order by
+	                    tt.WeekStart
+                ";
+
+            IQueryable<ReportItem> reportItems = 
+                Context.ReportItems.FromSqlRaw(sql, new object[] { userId });
+
+            return await reportItems.ToListAsync();
+        }
+
+
     }
 
 }

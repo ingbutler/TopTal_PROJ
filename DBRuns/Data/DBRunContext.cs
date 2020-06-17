@@ -12,8 +12,20 @@ namespace DBRuns.Data
         }
 
 
+
+        public DbSet<ItemsCount> ItemsCounts { get; set; }
+        public DbSet<ReportItem> ReportItems { get; set; }
         public DbSet<Run> Runs { get; set; }
         public DbSet<User> Users { get; set; }
+
+
+
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ItemsCount>().HasNoKey();
+            modelBuilder.Entity<ReportItem>().HasNoKey();
+        }
 
     }
 

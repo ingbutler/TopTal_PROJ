@@ -102,15 +102,44 @@ namespace DBRunsE2ETests
 
 
 
-        public static async Task GetRequest(string controller, string action, List<KeyValuePair<string, string>> headers, string queryString)
+        public static async Task<HttpResponseMessage> PutRequest(string controller, string action, string id, List<KeyValuePair<string, string>> headers, string body)
         {
-            string requestUri = Settings.AppUri + controller + (String.IsNullOrEmpty(action) ? "" : ("/" + action)) + (String.IsNullOrEmpty(queryString) ? "" : ("?" + queryString));
-            await GetRequest(requestUri, headers);
+            HttpRequestMessage request = new HttpRequestMessage();
+            request.Method = HttpMethod.Put;
+            request.RequestUri = new Uri(Settings.AppUri + controller + (String.IsNullOrEmpty(action) ? "" : ("/" + action)) + "/" + id);
+
+            if (headers != null)
+                headers.ForEach(x => request.Headers.Add(x.Key, x.Value));
+
+            request.Content =
+                new StringContent(
+                    body,
+                    Encoding.UTF8,
+                    "application/json"
+                );
+
+            HttpResponseMessage response = await client.SendAsync(request);
+            Console.WriteLine($"Response: {response}");
+            string contentStr = await response.Content.ReadAsStringAsync();
+            if (!String.IsNullOrEmpty(contentStr))
+                Console.Write($"Response content: {JValue.Parse(contentStr).ToString(Newtonsoft.Json.Formatting.Indented)}");
+            Console.WriteLine();
+            Console.WriteLine();
+
+            return response;
         }
 
 
 
-        public static async Task GetRequest(string requestUri, List<KeyValuePair<string, string>> headers)
+        public static async Task<HttpResponseMessage> GetRequest(string controller, string action, List<KeyValuePair<string, string>> headers, string queryString)
+        {
+            string requestUri = Settings.AppUri + controller + (String.IsNullOrEmpty(action) ? "" : ("/" + action)) + (String.IsNullOrEmpty(queryString) ? "" : ("?" + queryString));
+            return await GetRequest(requestUri, headers);
+        }
+
+
+
+        public static async Task<HttpResponseMessage> GetRequest(string requestUri, List<KeyValuePair<string, string>> headers)
         {
             HttpRequestMessage request = new HttpRequestMessage();
             request.Method = HttpMethod.Get;
@@ -120,12 +149,15 @@ namespace DBRunsE2ETests
                 headers.ForEach(x => request.Headers.Add(x.Key, x.Value));
 
             HttpResponseMessage response = await client.SendAsync(request);
+
             Console.WriteLine($"Response: {response}");
             string contentStr = await response.Content.ReadAsStringAsync();
             if (!String.IsNullOrEmpty(contentStr))
                 Console.Write($"Response content: {JValue.Parse(contentStr).ToString(Newtonsoft.Json.Formatting.Indented)}");
             Console.WriteLine();
             Console.WriteLine();
+
+            return response;
         }
 
     }

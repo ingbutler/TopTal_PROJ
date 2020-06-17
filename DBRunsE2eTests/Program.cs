@@ -6,10 +6,13 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using DBRuns.Models;
+using Newtonsoft.Json;
 
 namespace DBRunsE2ETests
 {
@@ -40,11 +43,13 @@ namespace DBRunsE2ETests
         static async Task Main(string[] args)
         {
             HttpResponseMessage response;
-            List<KeyValuePair<string, string>> headers;
+            string queryString;
             string body;
-            string token;
             Process dbRuns = null;
-
+            DateTime dateTimeMail;
+            string VerificationLink;
+            string contentStr;
+            User user;
 
             bool appDebug = true;
             if (appDebug)
@@ -60,16 +65,16 @@ namespace DBRunsE2ETests
             }
 
 
-            goto signIn;
+            //goto signIn;
 
 
 
-            #region SET FIRST USER (ADMIN)
+            #region FIRST USER SIGNUP (ADMIN)
 
-            Console.WriteLine("=====> SETTING FIRST USER (ADMIN)");
+            Console.WriteLine("=====> FIRST USER SIGNING UP (ADMIN)");
             Console.WriteLine();
 
-            DateTime dateTimeMail = DateTime.Now;
+            dateTimeMail = DateTime.Now;
 
             body =
                 @"
@@ -80,30 +85,32 @@ namespace DBRunsE2ETests
                 ";
             await Utils.PostRequest("Users", "SignUp", null, body);
 
-            Console.WriteLine("=====> FIRST USER (ADMIN) SET");
-            Console.WriteLine();
-            Console.WriteLine("=====> VERIFYING MAIL");
+            Console.WriteLine("=====> FIRST USER SIGNED UP (ADMIN)");
             Console.WriteLine();
 
-            string VerificationLink = Utils.RetrieveVerificationLink(dateTimeMail);
+
+            Console.WriteLine("=====> VERIFYING FIRST USER'S MAIL");
+            Console.WriteLine();
+
+            VerificationLink = Utils.RetrieveVerificationLink(dateTimeMail);
             if(VerificationLink == "")
             {
                 Console.WriteLine("No verification mail was found");
                 return;
             }
 
-            await Utils.GetRequest(VerificationLink, null);
+            response = await Utils.GetRequest(VerificationLink, null);
 
             Console.WriteLine("=====> FIRST USER'S MAIL VERIFIED");
             Console.WriteLine();
 
-            #endregion SET FIRST USER (ADMIN)
+            #endregion FIRST USER SIGNUP (ADMIN)
 
 
 
 
             #region ADMIN SIGN-IN
-signIn:
+        signIn:
             Console.WriteLine("=====> ADMIN SIGNING IN");
             Console.WriteLine();
 
@@ -124,12 +131,179 @@ signIn:
 
 
 
+            #region ADMIN RETRIEVING THEIR OWN ACCOUNT
+
+            Console.WriteLine("=====> ADMIN RETRIEVING THEIR OWN ACCOUNT");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.Email;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            Console.WriteLine("=====> ADMIN RETRIEVED THEIR OWN ACCOUNT");
+            Console.WriteLine();
+
+            #endregion ADMIN RETRIEVING THEIR OWN ACCOUNT
+
+
+
+
+            #region ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT PASSWORD
+        
+            Console.WriteLine("=====> ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT PASSWORD");
+            Console.WriteLine();
+
+            // To be able to create another user with same password...
+
+            user.Email = "admin@toptal.com";
+            body = JsonConvert.SerializeObject(user);
+
+            response = await Utils.PutRequest("Users", null, user.Id.ToString(), GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> ADMIN SAVED THEIR OWN ACCOUNT WITH A DIFFERENT PASSWORD");
+            Console.WriteLine();
+
+            #endregion ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT PASSWORD
+
+
+
+
+            #region NEW USER SIGNUP (ADMIN)
+
+            Console.WriteLine("=====> NEW USER SIGNING UP (ADMIN)");
+            Console.WriteLine();
+
+            dateTimeMail = DateTime.Now;
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.Email + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            await Utils.PostRequest("Users", "SignUp", null, body);
+
+            Console.WriteLine("=====> NEW USER SIGNED UP (ADMIN)");
+            Console.WriteLine();
+
+
+            Console.WriteLine("=====> VERIFYING NEW USER'S MAIL");
+            Console.WriteLine();
+
+            VerificationLink = Utils.RetrieveVerificationLink(dateTimeMail);
+            if (VerificationLink == "")
+            {
+                Console.WriteLine("No verification mail was found");
+                return;
+            }
+
+            response = await Utils.GetRequest(VerificationLink, null);
+
+            Console.WriteLine("=====> NEW USER'S MAIL VERIFIED");
+            Console.WriteLine();
+
+            #endregion NEW USER SIGNUP (ADMIN)
+
+
+
+
+            #region NEW USER FAILS SIGN-IN
+
+            Console.WriteLine("=====> NEW USER FAILING SIGNIN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.Email + @""",
+                        ""Password"":""WrongPwd""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> NEW USER FAILED SIGNIN FOR THREE TIMES");
+            Console.WriteLine();
+
+            #endregion NEW USER FAILS SIGN-IN
+
+
+
+
+            #region NEW USER'S FURTHER SIGN-IN ATTEMPT
+
+            Console.WriteLine("=====> NEW USER ATTEMPTING SIGNING IN AGAIN WITH CORRECT CREDENTIALS");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.Email + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> USER WAS BLOCKED");
+            Console.WriteLine();
+
+            #endregion NEW USER'S FURTHER SIGN-IN ATTEMPT
+
+
+
+
+            #region ADMIN UNBLOCKING USER'S ACCOUNT
+
+            Console.WriteLine("=====> ADMIN UNBLOCKING USER'S ACCOUNT");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.Email;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            user.SignInFailCount = 0;
+            body = JsonConvert.SerializeObject(user);
+
+            response = await Utils.PutRequest("Users", null, user.Id.ToString(), GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> ADMIN UNBLOCKED USER'S ACCOUNT");
+            Console.WriteLine();
+
+            #endregion ADMIN UNBLOCKING USER'S ACCOUNT
+
+
+
+
+            #region NEW USER'S SUCCESSFUL SIGN-IN ATTEMPT
+
+            Console.WriteLine("=====> NEW USER SIGNING IN SUCCESSFULLY");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.Email + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> NEW USER SIGNED IN SUCCESSFULLY");
+            Console.WriteLine();
+
+            #endregion NEW USER'S SUCCESSFUL SIGN-IN ATTEMPT
+
+
+
+
             #region ADMIN POSTING RUN
 
             Console.WriteLine("=====> ADMIN POSTING RUNS");
             Console.WriteLine();
-
-            token = response.Headers.GetValues("x-token").First();
 
             body =
                 @"
@@ -140,7 +314,7 @@ signIn:
                         ""Location"":""Campi Bisenzio,IT""
                     }
                 ";
-            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(token), body);
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
 
             body =
                 @"
@@ -151,7 +325,7 @@ signIn:
                         ""Location"":""Campi Bisenzio,IT""
                     }
                 ";
-            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(token), body);
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
 
             Console.WriteLine("=====> ADMIN POSTED RUNS");
             Console.WriteLine();
@@ -161,17 +335,25 @@ signIn:
 
 
 
-            #region LISTING RUNS
+            #region LISTING RUNS + REPORT
 
             Console.WriteLine("=====> LISTING RUNS");
             Console.WriteLine();
 
-            await Utils.GetRequest("Runs", null, GetBearerTokenHeader(token), null);
+            await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), null);
 
             Console.WriteLine("=====> RUNS LISTED");
             Console.WriteLine();
 
-            #endregion LISTING RUNS
+            Console.WriteLine("=====> RETRIEVING REPORT");
+            Console.WriteLine();
+
+            await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), null);
+
+            Console.WriteLine("=====> REPORT RETRIEVED");
+            Console.WriteLine();
+
+            #endregion LISTING RUNS + REPORT
 
 
 
@@ -181,31 +363,15 @@ signIn:
             Console.WriteLine("=====> ADMIN FILTERING USERS (THEMSELVES)");
             Console.WriteLine();
 
-            string queryString = "filter=email eq '" + Settings.Email + "'";
+            //string queryString = "filter=email eq '" + Settings.Email + "'&itemsPerPage=10&pageNumber=1";
+            queryString = "filter=email eq '" + Settings.Email + "'";
 
-            await Utils.GetRequest("Users", null, GetBearerTokenHeader(token), queryString);
+            await Utils.GetRequest("Users", null, GetBearerTokenHeader(response), queryString);
 
             Console.WriteLine("=====> ADMIN FILTERED USERS (THEMSELVES)");
             Console.WriteLine();
 
             #endregion ADMIN FILTERING USERS
-
-
-
-
-            #region ADMIN EDITING USER
-
-            Console.WriteLine("=====> ADMIN EDITING USER (CHANGING EMAIL TO THEMSELVES)");
-            Console.WriteLine();
-
-            // To be able to create another user with same password...
-
-            // ================> TODO
-
-            Console.WriteLine("=====> ADMIN EDITED USER (CHANGING EMAIL TO THEMSELVES)");
-            Console.WriteLine();
-
-            #endregion ADMIN EDITING USER
 
 
 
@@ -218,8 +384,16 @@ signIn:
 
 
 
-        private static List<KeyValuePair<string, string>> GetBearerTokenHeader(string token)
+        //private static List<KeyValuePair<string, string>> GetBearerTokenHeader(string token)
+        //{
+        //    return new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("authorization", "Bearer " + token) };
+        //}
+
+
+
+        private static List<KeyValuePair<string, string>> GetBearerTokenHeader(HttpResponseMessage response)
         {
+            string token = response.Headers.GetValues("x-token").First();
             return new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("authorization", "Bearer " + token) };
         }
 

@@ -9,9 +9,9 @@ namespace DBRuns.Models
         [Required]
         public DateTime Date { get; set; }
         [Required]
-        public int Distance { get; set; }
+        public decimal Distance { get; set; }
         [Required]
-        public int TimeRun { get; set; }
+        public decimal TimeRun { get; set; }
         [Required]
         public string Location { get; set; }
     }

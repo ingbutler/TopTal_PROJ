@@ -42,6 +42,17 @@ namespace DBRuns.Controllers
 
 
 
+        // GET: api/Runs
+        [HttpGet("[action]")]
+        [Authorize(Roles = Roles.ADMIN + "," + Roles.USER)]
+        public async Task<IEnumerable<ReportItem>> GetReport()
+        {
+            Guid userId = Utils.GetUserId(this.User);
+            return await RunService.GetReportAsync(userId);
+        }
+
+
+
         // POST: api/Runs
         [HttpPost]
         public async Task<ActionResult<Run>> PostRun(RunInput runInput)

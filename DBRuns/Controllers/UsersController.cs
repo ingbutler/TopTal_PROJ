@@ -12,7 +12,7 @@ using DBRuns.Services;
 namespace DBRuns.Controllers
 {
 
-    [Authorize]
+    [Authorize(Roles = (Roles.ADMIN + "," + Roles.MANAGER))]
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
@@ -31,9 +31,33 @@ namespace DBRuns.Controllers
 
         // GET: api/Users
         [HttpGet]
-        public async Task<IEnumerable<User>> GetUser([FromQuery(Name = "filter")] string filter)
+        public async Task<UserList> GetUser([FromQuery(Name = "filter")] string filter, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
         {
-            return await UserService.GetUserAsync(filter);
+            // Pagination defaults
+            if (itemsPerPage == 0)
+                itemsPerPage = 100;
+            if (pageNumber == 0)
+                pageNumber = 1;
+
+            return await UserService.GetUserAsync(filter, itemsPerPage, pageNumber);
+        }
+
+
+
+        // GET: api/Users
+        [HttpGet("{id}")]
+        public async Task<User> GetUser(Guid id)
+        {
+            return await UserService.GetUserAsync(id);
+        }
+
+
+
+        // GET: api/Users
+        [HttpGet("[action]")]
+        public async Task<User> GetUserByEmail([FromQuery(Name = "Email")] string email)
+        {
+            return await UserService.GetUserByEmailAsync(email);
         }
 
 
@@ -78,11 +102,13 @@ namespace DBRuns.Controllers
         public async Task<ActionResult<User>> SignIn(SignData signData)
         {
             if (!ModelState.IsValid)
-                return BadRequest();
+                return BadRequest("Invalid user or password");
 
             User user = await UserService.CheckCredentials(signData.Email, signData.Password);
             if (user == null)
                 return Unauthorized();
+            else if(user.IsBlocked)
+                return Unauthorized("Account is blocked after too many failed attempts. Ask a manager to unblock it");
 
             if (!user.IsVerified)
             {
@@ -103,7 +129,6 @@ namespace DBRuns.Controllers
 
         // PUT: api/TodoItems/5
         [HttpPut("{id}")]
-        [Authorize(Roles = Roles.ADMIN)]
         public async Task<IActionResult> PutUser(Guid id, User user)
         {
             if (id != user.Id)

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using DBRuns.Data;
 using DBRuns.Models;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace DBRuns.Services
 {
@@ -29,20 +30,53 @@ namespace DBRuns.Services
 
         #region DATA ACCESS LAYER
 
-        public async Task<IEnumerable<User>> GetUserAsync(string filter)
+        public async Task<UserList> GetUserAsync(string filter, int itemsPerPage, int pageNumber)
         {
-            String sql = $"select * from Users";
-            string[] parms;
+            UserList userList =
+                new UserList()
+                {
+                    ItemsPerPage = itemsPerPage,
+                    PageNumber = pageNumber
+                };
 
+            int offset = itemsPerPage * (pageNumber - 1);
+            String sql;
+            string whereStr = "";
+            List<string> parms;
             List<string> columns = typeof(User).GetProperties().Select(x => x.Name).ToList();
             string parsedFilter = Utils.ParseFilter(filter, columns, out parms);
 
             if(filter != "")
-                sql += " where " + parsedFilter;
+                whereStr = " where " + parsedFilter;
 
-            IQueryable<User> users = Context.Users.FromSqlRaw(sql, parms);
+            sql = 
+                $@"
+                    select 
+                        count(*) as count
+                    from 
+                        Users
+                ";
+            List<ItemsCount> itemsCounts = await Context.ItemsCounts.FromSqlRaw(sql, parms.ToArray()).ToListAsync();
+            userList.QueriedItemsCount = itemsCounts.First().Count;
+            userList.PageCount = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(userList.QueriedItemsCount) / Convert.ToDecimal(itemsPerPage)));
 
-            return await users.ToListAsync();
+            sql = 
+                $@"
+                    select 
+                        * 
+                    from 
+                        Users 
+                    " + whereStr + @"
+                    order by 
+                        Email
+                    offset
+                        " + offset + @" rows
+                    fetch next
+                        " + itemsPerPage + @" rows only
+                ";
+            userList.users = await Context.Users.FromSqlRaw(sql, parms.ToArray()).ToListAsync();
+
+            return userList;
         }
 
 
@@ -194,13 +228,22 @@ namespace DBRuns.Services
             User user = await GetUserByEmailAsync(email);
             if (user == null)
                 return null;
+            else if (user.SignInFailCount >= 3)
+                return new User() { IsBlocked = true };
 
             if (!Utils.VerifyMd5Hash(password, user.PwdHash))
+            {
+                user.SignInFailCount = user.SignInFailCount + 1;
+                await UpdateUserAsync(user);
                 return null;
+            }
             else
+            {
+                user.SignInFailCount = 0;       // FailCount reset
+                await UpdateUserAsync(user);
                 return user;
+            }
         }
-
 
         #endregion BUSINESS LOGIC
 

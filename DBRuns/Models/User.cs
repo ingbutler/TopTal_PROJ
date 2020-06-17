@@ -21,6 +21,9 @@ namespace DBRuns.Models
         public string Role { get; set; }
         public bool IsVerified { get; set; }
         public int SignInFailCount { get; set; }
+
+
+        public bool IsBlocked = false;
     }
 
 }
