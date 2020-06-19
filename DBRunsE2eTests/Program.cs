@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using DBRuns.Models;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Newtonsoft.Json;
 
 namespace DBRunsE2ETests
@@ -31,7 +32,13 @@ namespace DBRunsE2ETests
         public static string AppUri;
 
         public const string Email = MailUser;
+
         public const string Password = "pipPop";
+        public const string ManagerDefaultPassword = "mngrDefPwd";
+
+        public const string AdminEmail = "admin@toptal.com";
+        public const string ManagerEmail = "manager@toptal.com";
+        public const string SecondUserEmail = "second@toptal.com";
     }
 
 
@@ -43,6 +50,7 @@ namespace DBRunsE2ETests
         static async Task Main(string[] args)
         {
             HttpResponseMessage response;
+
             string queryString;
             string body;
             Process dbRuns = null;
@@ -65,8 +73,7 @@ namespace DBRunsE2ETests
             }
 
 
-            //goto signIn;
-
+            goto resumeHere;
 
 
             #region FIRST USER SIGNUP (ADMIN)
@@ -83,7 +90,7 @@ namespace DBRunsE2ETests
                         ""Password"":""" + Settings.Password + @"""
                     }
                 ";
-            await Utils.PostRequest("Users", "SignUp", null, body);
+            response = await Utils.PostRequest("Users", "SignUp", null, body);
 
             Console.WriteLine("=====> FIRST USER SIGNED UP (ADMIN)");
             Console.WriteLine();
@@ -110,7 +117,7 @@ namespace DBRunsE2ETests
 
 
             #region ADMIN SIGN-IN
-        signIn:
+
             Console.WriteLine("=====> ADMIN SIGNING IN");
             Console.WriteLine();
 
@@ -156,7 +163,7 @@ namespace DBRunsE2ETests
 
             // To be able to create another user with same password...
 
-            user.Email = "admin@toptal.com";
+            user.Email = Settings.AdminEmail;
             body = JsonConvert.SerializeObject(user);
 
             response = await Utils.PutRequest("Users", null, user.Id.ToString(), GetBearerTokenHeader(response), body);
@@ -169,7 +176,7 @@ namespace DBRunsE2ETests
 
 
 
-            #region NEW USER SIGNUP (ADMIN)
+            #region NEW USER SIGNUP
 
             Console.WriteLine("=====> NEW USER SIGNING UP (ADMIN)");
             Console.WriteLine();
@@ -183,9 +190,9 @@ namespace DBRunsE2ETests
                         ""Password"":""" + Settings.Password + @"""
                     }
                 ";
-            await Utils.PostRequest("Users", "SignUp", null, body);
+            response = await Utils.PostRequest("Users", "SignUp", null, body);
 
-            Console.WriteLine("=====> NEW USER SIGNED UP (ADMIN)");
+            Console.WriteLine("=====> NEW USER SIGNED UP");
             Console.WriteLine();
 
 
@@ -204,7 +211,7 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> NEW USER'S MAIL VERIFIED");
             Console.WriteLine();
 
-            #endregion NEW USER SIGNUP (ADMIN)
+            #endregion NEW USER SIGNUP
 
 
 
@@ -250,7 +257,29 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> USER WAS BLOCKED");
             Console.WriteLine();
 
-            #endregion NEW USER'S FURTHER SIGN-IN ATTEMPT
+        #endregion NEW USER'S FURTHER SIGN-IN ATTEMPT
+
+
+
+
+            #region ADMIN SIGN-IN
+
+            Console.WriteLine("=====> ADMIN SIGNING IN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.AdminEmail + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> ADMIN SIGNED IN");
+            Console.WriteLine();
+
+            #endregion ADMIN SIGN-IN
 
 
 
@@ -273,7 +302,7 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> ADMIN UNBLOCKED USER'S ACCOUNT");
             Console.WriteLine();
 
-            #endregion ADMIN UNBLOCKING USER'S ACCOUNT
+        #endregion ADMIN UNBLOCKING USER'S ACCOUNT
 
 
 
@@ -295,15 +324,353 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> NEW USER SIGNED IN SUCCESSFULLY");
             Console.WriteLine();
 
-            #endregion NEW USER'S SUCCESSFUL SIGN-IN ATTEMPT
+        #endregion NEW USER'S SUCCESSFUL SIGN-IN ATTEMPT
 
 
 
+resumeHere:
 
-            #region ADMIN POSTING RUN
+            #region ADMIN SIGN-IN
 
-            Console.WriteLine("=====> ADMIN POSTING RUNS");
+            Console.WriteLine("=====> ADMIN SIGNING IN");
             Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.AdminEmail + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> ADMIN SIGNED IN");
+            Console.WriteLine();
+
+            #endregion ADMIN SIGN-IN
+
+
+
+
+            #region ADMIN ADDING FIRST RUN TO FIRST USER
+
+            Console.WriteLine("=====> ADMIN ADDING FIRST RUN TO FIRST USER");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.Email;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-01T19:06"",
+                        ""Distance"":5800,
+                        ""TimeRun"":1480,
+                        ""Location"":""Sesto Fiorentino,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, user.Id.ToString(), GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> ADMIN ADDED FIRST RUN TO FIRST USER");
+            Console.WriteLine();
+
+            #endregion ADMIN ADDING FIRST RUN TO FIRST USER
+
+
+
+
+            #region ADMIN LISTING FIRST USER'S RUNS
+
+            Console.WriteLine("=====> ADMIN LISTING FIRST USER'S RUNS");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.Email;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            queryString = "filter=userId eq '" + user.Id + "'";
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> ADMIN LISTED FIRST USER'S RUNS");
+            Console.WriteLine();
+
+            #endregion ADMIN LISTING FIRST USER'S RUNS
+
+            return;
+
+
+
+            #region ADMIN CREATING MANAGER
+
+            Console.WriteLine("=====> ADMIN CREATING MANAGER");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.ManagerEmail + @""",
+                        ""Password"":""" + Settings.ManagerDefaultPassword + @""",
+                        ""Role"":""MANAGER"",
+                        ""IsVerified"":true,
+                        ""SignInFailCount"":0
+                    }
+                ";
+            response = await Utils.PostRequest("Users", null, GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> ADMIN CREATED MANAGER");
+            Console.WriteLine();
+
+            #endregion ADMIN CREATING MANAGER
+
+
+
+
+            #region MANAGER CHANGING THEIR OWN PASSWORD
+
+            Console.WriteLine("=====> MANAGER CHANGING THEIR OWN PASSWORD");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.ManagerEmail + @""",
+                        ""Password"":""" + Settings.ManagerDefaultPassword + @""",
+                        ""NewPassword"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "ChangePassword", null, body);
+
+            Console.WriteLine("=====> MANAGER CHANGED THEIR OWN PASSWORD");
+            Console.WriteLine();
+
+        #endregion MANAGER CHANGING THEIR OWN PASSWORD
+
+
+
+
+            #region MANAGER SIGN-IN
+
+            Console.WriteLine("=====> MANAGER SIGNING IN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.ManagerEmail + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> MANAGER SIGNED IN");
+            Console.WriteLine();
+
+            #endregion MANAGER SIGN-IN
+
+
+
+
+            #region MANAGER CREATING SECOND USER
+
+            Console.WriteLine("=====> MANAGER CREATING SECOND USER");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.SecondUserEmail + @""",
+                        ""Password"":""" + Settings.Password + @""",
+                        ""Role"":""USER"",
+                        ""IsVerified"":false,
+                        ""SignInFailCount"":0
+                    }
+                ";
+            response = await Utils.PostRequest("Users", null, GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> MANAGER CREATED SECOND USER");
+            Console.WriteLine();
+
+            #endregion MANAGER CREATING SECOND USER
+
+
+
+
+            #region MANAGER UPDATING SECOND USER (setting IsVerified)
+
+            queryString = "eMail=" + Settings.SecondUserEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> MANAGER UPDATING SECOND USER (setting IsVerified)");
+            Console.WriteLine();
+
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            user.IsVerified = true;
+            body = JsonConvert.SerializeObject(user);
+
+            response = await Utils.PutRequest("Users", null, user.Id.ToString(), GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> MANAGER UPDATED SECOND USER");
+            Console.WriteLine();
+
+            // Reading updated record
+            queryString = "eMail=" + Settings.SecondUserEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine();
+            Console.WriteLine();
+
+        #endregion MANAGER UPDATING SECOND USER (setting IsVerified)
+
+
+
+
+            #region SECOND USER SIGN-IN
+
+            Console.WriteLine("=====> SECOND USER SIGNING IN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.SecondUserEmail + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> SECOND USER SIGNED IN");
+            Console.WriteLine();
+
+            #endregion SECOND USER SIGN-IN
+
+
+
+
+            #region SECOND USER POSTING THEIR OWN RUNS
+
+            Console.WriteLine("=====> SECOND USER POSTING THEIR OWN RUNS");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-11T19:06"",
+                        ""Distance"":7600,
+                        ""TimeRun"":1520,
+                        ""Location"":""Firenze,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-12T19:06"",
+                        ""Distance"":12500,
+                        ""TimeRun"":3640,
+                        ""Location"":""Firenze,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-14T19:06"",
+                        ""Distance"":12700,
+                        ""TimeRun"":3600,
+                        ""Location"":""Firenze,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-15T12:07"",
+                        ""Distance"":13200,
+                        ""TimeRun"":3430,
+                        ""Location"":""Firenze,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-18T19:06"",
+                        ""Distance"":16200,
+                        ""TimeRun"":5780,
+                        ""Location"":""Firenze,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> SECOND USER POSTED THEIR OWN RUNS");
+            Console.WriteLine();
+
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), null);
+            Console.WriteLine();
+            Console.WriteLine();
+
+            #endregion SECOND USER POSTING THEIR OWN RUNS
+
+
+
+
+            #region FIRST USER SIGN-IN
+
+            Console.WriteLine("=====> FIRST USER SIGNING IN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.Email + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> FIRST USER SIGNED IN");
+            Console.WriteLine();
+
+            #endregion FIRST USER SIGN-IN
+
+
+
+
+            #region FIRST USER POSTING RUNS
+
+            Console.WriteLine("=====> FIRST USER POSTING RUNS");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-11T19:06"",
+                        ""Distance"":6000,
+                        ""TimeRun"":1520,
+                        ""Location"":""Sesto Fiorentino,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-12T19:06"",
+                        ""Distance"":12000,
+                        ""TimeRun"":3640,
+                        ""Location"":""Campi Bisenzio,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
 
             body =
                 @"
@@ -327,54 +694,352 @@ namespace DBRunsE2ETests
                 ";
             response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
 
-            Console.WriteLine("=====> ADMIN POSTED RUNS");
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-18T19:06"",
+                        ""Distance"":15000,
+                        ""TimeRun"":5780,
+                        ""Location"":""Campi Bisenzio,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> FIRST USER POSTED RUNS");
             Console.WriteLine();
 
-            #endregion ADMIN POSTING RUN
-
-
-
-
-            #region LISTING RUNS + REPORT
-
-            Console.WriteLine("=====> LISTING RUNS");
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), null);
+            Console.WriteLine();
             Console.WriteLine();
 
-            await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), null);
+            #endregion FIRST USER POSTING RUNS
 
-            Console.WriteLine("=====> RUNS LISTED");
+
+
+
+            #region FIRST USER FILTERING RUNS + REPORT
+
+            Console.WriteLine("=====> FIRST USER FILTERING RUNS");
             Console.WriteLine();
 
-            Console.WriteLine("=====> RETRIEVING REPORT");
+            queryString = "filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18')) and timerun ne 3430";
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> FIRST USER FILTERED RUNS");
             Console.WriteLine();
 
-            await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), null);
-
-            Console.WriteLine("=====> REPORT RETRIEVED");
+            Console.WriteLine("=====> RETRIEVING REPORT FOR YEAR 2019");
             Console.WriteLine();
 
-            #endregion LISTING RUNS + REPORT
+            queryString = "year=2019";
+            response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
 
-
-
-
-            #region ADMIN FILTERING USERS
-
-            Console.WriteLine("=====> ADMIN FILTERING USERS (THEMSELVES)");
+            Console.WriteLine("=====> REPORT RETRIEVED FOR YEAR 2019");
             Console.WriteLine();
 
-            //string queryString = "filter=email eq '" + Settings.Email + "'&itemsPerPage=10&pageNumber=1";
-            queryString = "filter=email eq '" + Settings.Email + "'";
-
-            await Utils.GetRequest("Users", null, GetBearerTokenHeader(response), queryString);
-
-            Console.WriteLine("=====> ADMIN FILTERED USERS (THEMSELVES)");
+            Console.WriteLine("=====> RETRIEVING REPORT FOR YEAR 2020 PAGE 1");
             Console.WriteLine();
 
-            #endregion ADMIN FILTERING USERS
+            queryString = "year=2020&itemsperpage=1&pagenumber=1";
+            response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> REPORT RETRIEVED FOR YEAR 2020 PAGE 1");
+            Console.WriteLine();
+
+            Console.WriteLine("=====> RETRIEVING REPORT FOR YEAR 2020 PAGE 2");
+            Console.WriteLine();
+
+            queryString = "year=2020&itemsperpage=1&pagenumber=2";
+            response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> REPORT RETRIEVED FOR YEAR 2020 PAGE 2");
+            Console.WriteLine();
+
+            #endregion FIRST USER LISTING RUNS + REPORT
 
 
 
+
+            #region MANAGER SIGN-IN
+
+            Console.WriteLine("=====> MANAGER SIGNING IN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.ManagerEmail + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> MANAGER SIGNED IN");
+            Console.WriteLine();
+
+            #endregion MANAGER SIGN-IN
+
+
+
+
+            #region MANAGER TRYING TO DELETE SECOND USER
+
+            Console.WriteLine("=====> MANAGER TRYING TO DELETE SECOND USER");
+            Console.WriteLine();
+
+
+            Console.WriteLine("=====> MANAGER FAILED DELETING SECOND USER");
+            Console.WriteLine();
+
+        #endregion MANAGER TRYING TO DELETE SECOND USER
+
+
+
+
+            #region ADMIN SIGN-IN
+
+            Console.WriteLine("=====> ADMIN SIGNING IN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.AdminEmail + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> ADMIN SIGNED IN");
+            Console.WriteLine();
+
+        #endregion ADMIN SIGN-IN
+
+
+
+
+            #region ADMIN BULK DELETING SECOND USER'S RUN RECORDS
+
+            Console.WriteLine("=====> ADMIN BULK DELETING SECOND USER'S RUN RECORDS");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.SecondUserEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            queryString = "filter=userId eq '" + user.Id + "'";
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            ItemList<Run> ilr = JsonConvert.DeserializeObject<ItemList<Run>>(contentStr);
+            // Suppose no more than one page of Runs
+            foreach(Run run in ilr.items)
+            {
+                response = await Utils.DeleteRequest("Runs", null, run.Id.ToString(), GetBearerTokenHeader(response));
+            }
+
+            Console.WriteLine("=====> ADMIN BULK DELETED SECOND USER'S RUN RECORDS");
+            Console.WriteLine();
+
+        #endregion ADMIN BULK DELETING SECOND USER'S RUN RECORDS
+
+
+
+
+            #region MANAGER SIGN-IN
+
+            Console.WriteLine("=====> MANAGER SIGNING IN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.ManagerEmail + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> MANAGER SIGNED IN");
+            Console.WriteLine();
+
+            #endregion MANAGER SIGN-IN
+
+
+
+
+            #region MANAGER DELETING SECOND USER
+
+            Console.WriteLine("=====> MANAGER DELETING SECOND USER");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.SecondUserEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+            if (user == null)
+            {
+                Console.WriteLine("=====> SECOND USER DOES NOT EXIST");
+                Console.WriteLine();
+            }
+            else
+            {
+                response = await Utils.DeleteRequest("Users", null, user.Id.ToString(), GetBearerTokenHeader(response));
+                Console.WriteLine("=====> MANAGER DELETED SECOND USER");
+                Console.WriteLine();
+            }
+
+            #endregion MANAGER DELETING SECOND USER
+
+
+
+
+            #region MANAGER POSTING THEIR OWN RUNS
+
+            Console.WriteLine("=====> MANAGER POSTING THEIR OWN RUNS");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-11T19:06"",
+                        ""Distance"":6000,
+                        ""TimeRun"":1520,
+                        ""Location"":""Scandicci,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-12T19:06"",
+                        ""Distance"":12000,
+                        ""TimeRun"":3640,
+                        ""Location"":""Scandicci,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-14T19:06"",
+                        ""Distance"":12000,
+                        ""TimeRun"":3600,
+                        ""Location"":""Scandicci,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-15T12:07"",
+                        ""Distance"":12000,
+                        ""TimeRun"":3430,
+                        ""Location"":""Scandicci,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            body =
+                @"
+                    {
+                        ""Date"":""2020-06-18T19:06"",
+                        ""Distance"":15000,
+                        ""TimeRun"":5780,
+                        ""Location"":""Scandicci,IT""
+                    }
+                ";
+            response = await Utils.PostRequest("Runs", null, GetBearerTokenHeader(response), body);
+
+            Console.WriteLine("=====> MANAGER POSTED THEIR OWN RUNS");
+            Console.WriteLine();
+
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), null);
+            Console.WriteLine();
+            Console.WriteLine();
+
+        #endregion MANAGER POSTING THEIR OWN RUNS
+
+
+
+
+            #region ADMIN SIGN-IN
+
+            Console.WriteLine("=====> ADMIN SIGNING IN");
+            Console.WriteLine();
+
+            body =
+                @"
+                    {
+                        ""Email"":""" + Settings.AdminEmail + @""",
+                        ""Password"":""" + Settings.Password + @"""
+                    }
+                ";
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            Console.WriteLine("=====> ADMIN SIGNED IN");
+            Console.WriteLine();
+
+        #endregion ADMIN SIGN-IN
+
+
+
+
+            #region ADMIN VIEWING MANAGER'S REPORT
+
+            Console.WriteLine("=====> ADMIN VIEWING MANAGER'S REPORT");
+            Console.WriteLine();
+
+
+            Console.WriteLine("=====> ADMIN VIEWED MANAGER'S REPORT");
+            Console.WriteLine();
+
+            #endregion ADMIN VIEWING USER'S REPORT
+
+
+
+
+            #region ADMIN DOWNGRADING MANAGER'S PERFORMANCE
+
+            Console.WriteLine("=====> ADMIN DOWNGRADING MANAGER'S PERFORMANCE");
+            Console.WriteLine();
+
+
+            Console.WriteLine("=====> ADMIN DOWNGRADED MANAGER'S PERFORMANCE");
+            Console.WriteLine();
+
+            #endregion ADMIN DOWNGRADING MANAGER'S PERFORMANCE
+
+
+
+
+            #region ADMIN VIEWING MANAGER'S REPORT
+
+            Console.WriteLine("=====> ADMIN VIEWING MANAGER'S REPORT");
+            Console.WriteLine();
+
+
+            Console.WriteLine("=====> ADMIN VIEWED MANAGER'S REPORT");
+            Console.WriteLine();
+
+            #endregion ADMIN VIEWING MANAGER'S REPORT
+
+
+
+
+            #region ADMIN DELETING MANAGER AND ALL THEIR RUNS
+
+            Console.WriteLine("=====> ADMIN DELETING MANAGER AND ALL THEIR RUNS");
+            Console.WriteLine();
+
+
+            Console.WriteLine("=====> ADMIN DELETED MANAGER AND ALL THEIR RUNS");
+            Console.WriteLine();
+
+            #endregion ADMIN DELETING MANAGER AND ALL THEIR RUNS
 
 
 
@@ -382,12 +1047,6 @@ namespace DBRunsE2ETests
                 dbRuns.Kill();
         }
 
-
-
-        //private static List<KeyValuePair<string, string>> GetBearerTokenHeader(string token)
-        //{
-        //    return new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("authorization", "Bearer " + token) };
-        //}
 
 
 

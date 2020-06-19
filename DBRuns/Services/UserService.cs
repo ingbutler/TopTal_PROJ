@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using DBRuns.Data;
 using DBRuns.Models;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Configuration;
 
 namespace DBRuns.Services
 {
@@ -17,23 +17,32 @@ namespace DBRuns.Services
 
         private readonly DBRunContext Context;
         private readonly IActionContextAccessor ActionContextAccessor;
+        private readonly IConfiguration Configuration;
+        private readonly RunService RunService;
 
 
 
-        public UserService(DBRunContext context, IActionContextAccessor actionContextAccessor)
+        public UserService(DBRunContext context, IActionContextAccessor actionContextAccessor, IConfiguration configuration, RunService runService)
         {
             Context = context;
             ActionContextAccessor = actionContextAccessor;
+            Configuration = configuration;
+            RunService = runService;
         }
 
 
 
         #region DATA ACCESS LAYER
 
-        public async Task<UserList> GetUserAsync(string filter, int itemsPerPage, int pageNumber)
+        public async Task<ItemList<User>> GetUserAsync(string filter, int itemsPerPage, int pageNumber)
         {
-            UserList userList =
-                new UserList()
+            if (itemsPerPage == 0)
+                itemsPerPage = Int32.Parse(Configuration["ItemsPerPageDefault"]);
+            if (pageNumber == 0)
+                pageNumber = Int32.Parse(Configuration["PageNumberDefault"]);
+
+            ItemList<User> itemList =
+                new ItemList<User>()
                 {
                     ItemsPerPage = itemsPerPage,
                     PageNumber = pageNumber
@@ -43,25 +52,24 @@ namespace DBRuns.Services
             String sql;
             string whereStr = "";
             List<string> parms;
-            List<string> columns = typeof(User).GetProperties().Select(x => x.Name).ToList();
-            string parsedFilter = Utils.ParseFilter(filter, columns, out parms);
+            string parsedFilter = Utils.ParseFilter(filter, typeof(User), out parms);
 
             if(filter != "")
                 whereStr = " where " + parsedFilter;
 
             sql = 
-                $@"
+                @"
                     select 
                         count(*) as count
                     from 
                         Users
-                ";
+                    " + whereStr;
             List<ItemsCount> itemsCounts = await Context.ItemsCounts.FromSqlRaw(sql, parms.ToArray()).ToListAsync();
-            userList.QueriedItemsCount = itemsCounts.First().Count;
-            userList.PageCount = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(userList.QueriedItemsCount) / Convert.ToDecimal(itemsPerPage)));
+            itemList.QueriedItemsCount = itemsCounts.First().Count;
+            itemList.PageCount = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(itemList.QueriedItemsCount) / Convert.ToDecimal(itemsPerPage)));
 
             sql = 
-                $@"
+                @"
                     select 
                         * 
                     from 
@@ -74,9 +82,9 @@ namespace DBRuns.Services
                     fetch next
                         " + itemsPerPage + @" rows only
                 ";
-            userList.users = await Context.Users.FromSqlRaw(sql, parms.ToArray()).ToListAsync();
+            itemList.items = await Context.Users.FromSqlRaw(sql, parms.ToArray()).ToListAsync();
 
-            return userList;
+            return itemList;
         }
 
 
@@ -120,6 +128,9 @@ namespace DBRuns.Services
             var user = await Context.Users.FindAsync(id);
             if (user == null)
                 return null;
+
+            // Bulk delete user's runs
+            await RunService.DeleteRunByUserAsync(user.Id);
 
             Context.Users.Remove(user);
             await Context.SaveChangesAsync();
@@ -205,8 +216,10 @@ namespace DBRuns.Services
                 new User()
                 {
                     Email = signData.Email,
-                    PwdHash = Utils.GetMd5Hash(signData.Password),
-                    IsVerified = false
+                    //PwdHash = Utils.GetMd5Hash(signData.Password),
+                    Password = signData.Password,
+                    IsVerified = false,
+                    SignInFailCount = 0
                 };
 
             if (!UsersExist())              // First user is admin
@@ -244,6 +257,7 @@ namespace DBRuns.Services
                 return user;
             }
         }
+
 
         #endregion BUSINESS LOGIC
 

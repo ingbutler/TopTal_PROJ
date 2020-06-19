@@ -31,14 +31,8 @@ namespace DBRuns.Controllers
 
         // GET: api/Users
         [HttpGet]
-        public async Task<UserList> GetUser([FromQuery(Name = "filter")] string filter, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
+        public async Task<ItemList<User>> GetUser([FromQuery(Name = "filter")] string filter, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
         {
-            // Pagination defaults
-            if (itemsPerPage == 0)
-                itemsPerPage = 100;
-            if (pageNumber == 0)
-                pageNumber = 1;
-
             return await UserService.GetUserAsync(filter, itemsPerPage, pageNumber);
         }
 
@@ -68,6 +62,20 @@ namespace DBRuns.Controllers
         public async Task VerifyUser(Guid id)
         {
             await UserService.VerifyUserAsync(id);
+        }
+
+
+
+        // POST: api/Users
+        [HttpPost]
+        public async Task<ActionResult<User>> PostUser(User user)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            await UserService.InsertUserAsync(user);
+
+            return NoContent();
         }
 
 
@@ -102,11 +110,11 @@ namespace DBRuns.Controllers
         public async Task<ActionResult<User>> SignIn(SignData signData)
         {
             if (!ModelState.IsValid)
-                return BadRequest("Invalid user or password");
+                return BadRequest();
 
             User user = await UserService.CheckCredentials(signData.Email, signData.Password);
             if (user == null)
-                return Unauthorized();
+                return Unauthorized("Invalid user or password");
             else if(user.IsBlocked)
                 return Unauthorized("Account is blocked after too many failed attempts. Ask a manager to unblock it");
 
@@ -127,6 +135,32 @@ namespace DBRuns.Controllers
 
 
 
+        // POST: api/Users/SignIn
+        [HttpPost("[action]")]
+        [AllowAnonymous]
+        public async Task<ActionResult<User>> ChangePassword(SignData signData)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            User user = await UserService.CheckCredentials(signData.Email, signData.Password);
+            if (user == null)
+                return Unauthorized("Invalid user or password");
+            else if (user.IsBlocked)
+                return Unauthorized("Account is blocked after too many failed attempts. Ask a manager to unblock it");
+
+            if (!user.IsVerified)
+                return Unauthorized("User not verified. Request sign-in to get verification mail sent again");
+            else
+            {
+                user.Password = signData.NewPassword;
+                await UserService.UpdateUserAsync(user);
+                return Ok("Password has been changed");
+            }
+        }
+
+
+
         // PUT: api/TodoItems/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(Guid id, User user)
@@ -137,6 +171,19 @@ namespace DBRuns.Controllers
             int result = await UserService.UpdateUserAsync(user);
 
             return NoContent();
+        }
+
+
+
+        // DELETE: api/Runs/5
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<User>> DeleteUser(Guid id)
+        {
+            User user = await UserService.DeleteUserAsync(id);
+            if (user == null)
+                return NotFound();
+            else
+                return user;
         }
 
     }

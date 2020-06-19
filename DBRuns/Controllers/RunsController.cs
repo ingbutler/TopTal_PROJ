@@ -30,25 +30,23 @@ namespace DBRuns.Controllers
 
         // GET: api/Runs
         [HttpGet]
-        [Authorize(Roles = Roles.ADMIN + "," + Roles.USER)]
-        public async Task<IEnumerable<Run>> GetRun()
+        public async Task<ItemList<Run>> GetRun([FromQuery(Name = "filter")] string filter, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
         {
             Guid? userId = null;
             if (Utils.GetUserRole(this.User) != Roles.ADMIN)
                 userId = Utils.GetUserId(this.User);
 
-            return await RunService.GetRunAsync(userId);
+            return await RunService.GetRunAsync(userId, filter, itemsPerPage, pageNumber);
         }
 
 
 
         // GET: api/Runs
         [HttpGet("[action]")]
-        [Authorize(Roles = Roles.ADMIN + "," + Roles.USER)]
-        public async Task<IEnumerable<ReportItem>> GetReport()
+        public async Task<ItemList<ReportItem>> GetReport([FromQuery(Name = "year")] int year, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
         {
             Guid userId = Utils.GetUserId(this.User);
-            return await RunService.GetReportAsync(userId);
+            return await RunService.GetReportAsync(userId, year, itemsPerPage, pageNumber);
         }
 
 
@@ -65,6 +63,48 @@ namespace DBRuns.Controllers
                     runInput
                 );
             
+            return NoContent();
+        }
+
+
+
+        // POST: api/Runs
+        [HttpPost("{userId}")]
+        [Authorize(Roles = Roles.ADMIN)]
+        public async Task<ActionResult<Run>> PostRun(Guid userId, RunInput runInput)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            await RunService.InsertRunAsync(
+                    userId,
+                    runInput
+                );
+
+            return NoContent();
+        }
+
+
+
+        // DELETE: api/Runs/5
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<Run>> DeleteRun(Guid id)
+        {
+            Run run = await RunService.DeleteRunAsync(id);
+            if (run == null)
+                return NotFound();
+            else
+                return run;
+        }
+
+
+
+        // DELETE: api/Runs/5
+        [HttpDelete("{userId}")]
+        [Authorize(Roles = Roles.ADMIN)]
+        public async Task<ActionResult<Run>> DeleteByUser(Guid userId)
+        {
+            await RunService.DeleteRunAsync(userId);
             return NoContent();
         }
 

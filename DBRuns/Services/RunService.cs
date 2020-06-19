@@ -2,14 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using DBRuns.Data;
 using DBRuns.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http;
-using System.Net.Http.Headers;
 
 namespace DBRuns.Services
 {
@@ -30,14 +27,65 @@ namespace DBRuns.Services
 
 
 
-        public async Task<IEnumerable<Run>> GetRunAsync(Guid? userId)
+        public async Task<ItemList<Run>> GetRunAsync(Guid? userId, string filter, int itemsPerPage, int pageNumber)
         {
-            IQueryable<Run> runs = Context.Runs.FromSqlInterpolated($"select * from Runs");
+            if (itemsPerPage == 0)
+                itemsPerPage = Int32.Parse(Configuration["ItemsPerPageDefault"]);
+            if (pageNumber == 0)
+                pageNumber = Int32.Parse(Configuration["PageNumberDefault"]);
+
+            ItemList<Run> itemList =
+                new ItemList<Run>()
+                {
+                    ItemsPerPage = itemsPerPage,
+                    PageNumber = pageNumber
+                };
+
+            int offset = itemsPerPage * (pageNumber - 1);
+            String sql;
+            string whereStr = "";
+            List<string> parms;
+            string parsedFilter = Utils.ParseFilter(filter, typeof(Run), out parms);
+
+            if (!string.IsNullOrEmpty(parsedFilter))
+                whereStr = " where " + parsedFilter;
 
             if (userId != null)
-                runs = runs.Where(x => x.UserId == userId);
+            {
+                if(whereStr == "")
+                    whereStr += " where UserId = '" + userId + "'";
+                else
+                    whereStr += " and UserId = '" + userId + "'";
+            }
 
-            return await runs.ToListAsync();
+            sql =
+                @"
+                    select 
+                        count(*) as count
+                    from 
+                        Runs
+                    " + whereStr;
+            List<ItemsCount> itemsCounts = await Context.ItemsCounts.FromSqlRaw(sql, parms.ToArray()).ToListAsync();
+            itemList.QueriedItemsCount = itemsCounts.First().Count;
+            itemList.PageCount = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(itemList.QueriedItemsCount) / Convert.ToDecimal(itemsPerPage)));
+
+            sql =
+                $@"
+                    select 
+                        * 
+                    from 
+                        Runs 
+                    " + whereStr + @"
+                    order by 
+                        Date
+                    offset
+                        " + offset + @" rows
+                    fetch next
+                        " + itemsPerPage + @" rows only
+                ";
+            itemList.items = await Context.Runs.FromSqlRaw(sql, parms.ToArray()).ToListAsync();
+
+            return itemList;
         }
 
 
@@ -51,13 +99,36 @@ namespace DBRuns.Services
                 throw new ArgumentOutOfRangeException("Time must be greater than zero");
 
 
+            DateTime dd = runInput.Date.AddDays(-1);
+            string dt = new DateTimeOffset(dd, TimeSpan.Zero).ToUnixTimeSeconds().ToString();
+
+
             string weather = "";
-            string weatherReqUri = Configuration["WeatherByCityReq"];
-            weatherReqUri = weatherReqUri.Replace("{cityCountry}", runInput.Location);
+            string weatherReqUri;
+            HttpResponseMessage response;
 
             using (HttpClient httpClient = new HttpClient())
             {
-                weather = await httpClient.GetStringAsync(weatherReqUri);
+                weatherReqUri = Configuration["WeatherByCityReq"];
+                weatherReqUri = weatherReqUri.Replace("{cityCountry}", runInput.Location);
+                response = await httpClient.GetAsync(weatherReqUri);
+                string s = await response.Content.ReadAsStringAsync();
+
+                s = s.Substring(16);
+                int cp = s.IndexOf(',');
+                string lon = s.Substring(0, cp);
+                s = s.Substring(lon.Length + 7);
+                cp = s.IndexOf('}');
+                string lat = s.Substring(0, cp);
+
+                weatherReqUri = Configuration["HistoricalWeatherReq"];
+                weatherReqUri =
+                    weatherReqUri
+                        .Replace("{lat}", lat)
+                        .Replace("{lon}", lon)
+                        .Replace("{time}", dt);
+                response = await httpClient.GetAsync(weatherReqUri);
+                weather = await response.Content.ReadAsStringAsync();
             }
 
             if (weather.Length > 1000)          // Limitazione alla lunghezza della colonna nel db
@@ -123,6 +194,14 @@ namespace DBRuns.Services
 
 
 
+        public async Task DeleteRunByUserAsync(Guid userId)
+        {
+            string sql = "delete from Runs where UserId = @userId";
+            await Context.Database.ExecuteSqlCommandAsync(sql, userId);
+        }
+
+
+
         private bool RunExists(Guid id)
         {
             return Context.Runs.Any(e => e.Id == id);
@@ -130,9 +209,39 @@ namespace DBRuns.Services
 
 
 
-        public async Task<IEnumerable<ReportItem>> GetReportAsync(Guid userId)
+        public async Task<ItemList<ReportItem>> GetReportAsync(Guid userId, int year, int itemsPerPage, int pageNumber)
         {
+            if (itemsPerPage == 0)
+                itemsPerPage = Int32.Parse(Configuration["ItemsPerPageDefault"]);
+            if (pageNumber == 0)
+                pageNumber = Int32.Parse(Configuration["PageNumberDefault"]);
+
+            ItemList<ReportItem> itemList =
+                new ItemList<ReportItem>()
+                {
+                    ItemsPerPage = itemsPerPage,
+                    PageNumber = pageNumber
+                };
+
+            int offset = itemsPerPage * (pageNumber - 1);
+            object[] parms = new object[] { userId, year };
+
+
             string sql =
+                @"
+                    select 
+                        count(distinct (year(Date) + datepart(week, Date))) as count
+                    from
+                        Runs
+                    where
+                        UserId = {0}
+                        and year(Date) = {1}
+                ";
+            List<ItemsCount> itemsCounts = await Context.ItemsCounts.FromSqlRaw(sql, parms).ToListAsync();
+            itemList.QueriedItemsCount = itemsCounts.First().Count;
+            itemList.PageCount = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(itemList.QueriedItemsCount) / Convert.ToDecimal(itemsPerPage)));
+
+            sql =
                 @"
                     select
                         tt.WeekStart
@@ -161,6 +270,7 @@ namespace DBRuns.Services
 			                            Runs
                                     where
                                         UserId = {0}
+                                        and year(Date) = {1}
 	                            ) as t
                             group by
 	                            t.WeekStart
@@ -169,14 +279,16 @@ namespace DBRuns.Services
                         ) as tt
                     order by
 	                    tt.WeekStart
+                    offset
+                        " + offset + @" rows
+                    fetch next
+                        " + itemsPerPage + @" rows only
                 ";
 
-            IQueryable<ReportItem> reportItems = 
-                Context.ReportItems.FromSqlRaw(sql, new object[] { userId });
+            itemList.items = await Context.ReportItems.FromSqlRaw(sql, parms).ToListAsync();
 
-            return await reportItems.ToListAsync();
+            return itemList;
         }
-
 
     }
 

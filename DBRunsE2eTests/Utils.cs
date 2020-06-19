@@ -75,9 +75,21 @@ namespace DBRunsE2ETests
 
         public static async Task<HttpResponseMessage> PostRequest(string controller, string action, List<KeyValuePair<string, string>> headers, string body)
         {
+            return await PostRequest(controller, action, null, headers, body);
+        }
+
+
+
+        public static async Task<HttpResponseMessage> PostRequest(string controller, string action, string id, List<KeyValuePair<string, string>> headers, string body)
+        {
             HttpRequestMessage request = new HttpRequestMessage();
             request.Method = HttpMethod.Post;
-            request.RequestUri = new Uri(Settings.AppUri + controller + (String.IsNullOrEmpty(action) ? "" : ("/" + action)));
+            request.RequestUri = 
+                new Uri(
+                    Settings.AppUri + controller 
+                    + (String.IsNullOrEmpty(action) ? "" : ("/" + action))
+                    + (String.IsNullOrEmpty(id) ? "" : ("/" + id))
+                );
 
             if (headers != null)
                 headers.ForEach(x => request.Headers.Add(x.Key, x.Value));
@@ -122,7 +134,43 @@ namespace DBRunsE2ETests
             Console.WriteLine($"Response: {response}");
             string contentStr = await response.Content.ReadAsStringAsync();
             if (!String.IsNullOrEmpty(contentStr))
+            try
+            {
                 Console.Write($"Response content: {JValue.Parse(contentStr).ToString(Newtonsoft.Json.Formatting.Indented)}");
+            }
+            catch
+            {
+                Console.Write(contentStr);
+            }
+            Console.WriteLine();
+            Console.WriteLine();
+
+            return response;
+        }
+
+
+
+        public static async Task<HttpResponseMessage> DeleteRequest(string controller, string action, string id, List<KeyValuePair<string, string>> headers)
+        {
+            HttpRequestMessage request = new HttpRequestMessage();
+            request.Method = HttpMethod.Delete;
+            request.RequestUri = new Uri(Settings.AppUri + controller + (String.IsNullOrEmpty(action) ? "" : ("/" + action)) + "/" + id);
+
+            if (headers != null)
+                headers.ForEach(x => request.Headers.Add(x.Key, x.Value));
+
+            HttpResponseMessage response = await client.SendAsync(request);
+            Console.WriteLine($"Response: {response}");
+            string contentStr = await response.Content.ReadAsStringAsync();
+            if (!String.IsNullOrEmpty(contentStr))
+            try
+            {
+                Console.Write($"Response content: {JValue.Parse(contentStr).ToString(Newtonsoft.Json.Formatting.Indented)}");
+            }
+            catch
+            {
+                Console.Write(contentStr);
+            }
             Console.WriteLine();
             Console.WriteLine();
 
@@ -153,7 +201,16 @@ namespace DBRunsE2ETests
             Console.WriteLine($"Response: {response}");
             string contentStr = await response.Content.ReadAsStringAsync();
             if (!String.IsNullOrEmpty(contentStr))
-                Console.Write($"Response content: {JValue.Parse(contentStr).ToString(Newtonsoft.Json.Formatting.Indented)}");
+            {
+                try
+                {
+                    Console.Write($"Response content: {JValue.Parse(contentStr).ToString(Newtonsoft.Json.Formatting.Indented)}");
+                }
+                catch 
+                {
+                    Console.Write(contentStr);
+                }
+            }
             Console.WriteLine();
             Console.WriteLine();
 

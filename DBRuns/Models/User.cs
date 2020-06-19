@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DBRuns.Models
 {
@@ -22,6 +24,15 @@ namespace DBRuns.Models
         public bool IsVerified { get; set; }
         public int SignInFailCount { get; set; }
 
+
+        [NotMapped]
+        public string Password 
+        {
+            set 
+            {
+                PwdHash = Utils.GetMd5Hash(value);
+            }
+        }
 
         public bool IsBlocked = false;
     }

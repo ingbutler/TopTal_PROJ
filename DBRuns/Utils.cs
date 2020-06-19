@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore.Query.Internal;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Mail;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -154,62 +156,142 @@ namespace DBRuns
 
 
 
-        public static string ParseFilter(string filter, List<string> columns, out List<string> parms)
+        public static string ParseFilter(string filter, Type type, out List<string> parms)
         {
+            const string ISCOLUMN = "isColumn";
+            const string ISCOND = "isCond";
+            const string ISPARM = "isParm";
+
+
+            parms = new List<string>();
+
+
+            if (string.IsNullOrEmpty(filter))
+                return "";
+
+
+            Dictionary<string, bool> columns = type.GetProperties().ToDictionary(x => x.Name.ToLower(), y => (y.PropertyType.Name == typeof(DateTime).Name));
+
             Dictionary<string, string> conds =
                 new Dictionary<string, string>
                 {
-                    { "eq", "=" },
-                    { "ne", "<>" },
-                    { "lt", "<" },
-                    { "le", "<=" },
-                    { "gt", ">" },
-                    { "ge", ">" },
+                    { " eq ", "=" },
+                    { " ne ", "<>" },
+                    { " lt ", "<" },
+                    { " le ", "<=" },
+                    { " gt ", ">" },
+                    { " ge ", ">=" },
                 };
-            string pattern = @"(AND|OR|\(|\)|eq|lt|gt";
 
-            foreach (string column in columns)
-                pattern += "|" + column;
+            HashSet<string> notPars = new HashSet<string>();
+
+            foreach (string col in columns.Keys)
+                notPars.Add(col);
+
+            foreach (string cond in conds.Keys)
+                notPars.Add(cond);
+
+            notPars.Add(" and ");
+            notPars.Add(" or ");
+
+            string pattern = @"(\(|\)";
+
+            foreach (var notPar in notPars)
+                pattern += "|" + notPar;
 
             pattern += ")";
 
+            notPars.Add("(");
+            notPars.Add(")");
 
+
+            // SEGMENTING THE FILTER
+
+            List<KeyValuePair<string, string>> filterSegments = new List<KeyValuePair<string, string>>();
             int start = 0;
-            int end = 0;
-            bool prevIsCondition = false;
-            int i = 0;
-            parms = new List<string>();
-            string newFilter = "";
 
             foreach (Match match in Regex.Matches(filter, pattern, RegexOptions.IgnoreCase))
             {
-                if (conds.ContainsKey(match.Value))
+                if (match.Index != start)
                 {
-                    // Beginning of a parameter value found
-                    newFilter += filter.Substring(start, (match.Index - start)).TrimEnd() + " " + conds[match.Value];
-                    start = match.Index + match.Value.Length;
-                    prevIsCondition = true;
+                    string other = filter.Substring(start, (match.Index - start)).Trim();
+                    if (other != "")
+                    {
+                        // Removing single quotes
+                        if (other[0] == '\'')
+                            other = other.Substring(1);
+                        if (other[other.Length - 1] == '\'')
+                            other = other.Substring(0, other.Length - 1);
+
+                        filterSegments.Add(new KeyValuePair<string, string>(other, ISPARM));
+                    }
                 }
-                else if (prevIsCondition)
+
+                if (conds.ContainsKey(match.Value.ToLower()))
+                    filterSegments.Add(new KeyValuePair<string, string>(match.Value.ToLower(), ISCOND));      // Filter segment is a conditional operator
+                else if (columns.ContainsKey(match.Value.ToLower()))
+                    filterSegments.Add(new KeyValuePair<string, string>(match.Value.ToLower(), ISCOLUMN));      // Filter segment is a column
+                else
+                    filterSegments.Add(new KeyValuePair<string, string>(match.Value, notPars.Contains(match.Value.ToLower()) ? "" : ISPARM));
+
+                start = match.Index + match.Length;
+            }
+
+            if (filter.Length > (start))
+            {
+                //filterSegments.Add(new KeyValuePair<string, string>(filter.Substring(start, filter.Length - start).Trim(), ISPARM));
+
+                string other = filter.Substring(start, filter.Length - start).Trim();
+                if (other != "")
+                {
+                    // Removing single quotes
+                    if (other[0] == '\'')
+                        other = other.Substring(1);
+                    if (other[other.Length - 1] == '\'')
+                        other = other.Substring(0, other.Length - 1);
+
+                    filterSegments.Add(new KeyValuePair<string, string>(other, ISPARM));
+                }
+            }
+
+
+            string lastColumn = "";
+            int lastColIndex = -1;
+
+            for (int j = 0; j < filterSegments.Count; j++)
+            {
+                if (filterSegments[j].Value == ISCOLUMN)
+                {
+                    lastColumn = filterSegments[j].Key;
+                    lastColIndex = j;
+                }
+                else if (filterSegments[j].Value == ISPARM)
+                {
+                    if (columns[lastColumn] && (filterSegments[j].Key.Length == 10))
+                        // If the column has type "DateTime" and the length of the parameter is 10
+                        filterSegments[lastColIndex] = new KeyValuePair<string, string>("convert(date, " + lastColumn + ")", ISCOLUMN);
+                }
+            }
+
+
+            string newFilter = "";
+
+            int i = -1;
+            foreach (var sgm in filterSegments)
+            {
+                if (sgm.Value == ISPARM)
                 {
                     i++;
-                    end = match.Index;      // First match after condition: marks the end of a parameter value
-
-                    AddParam(parms, filter, start, end);
-                    newFilter += " {" + i.ToString() + "} " + match;
-                    prevIsCondition = false;
-                    start = end + match.Value.Length;
+                    newFilter += "{" + i.ToString() + "}";
+                    parms.Add(sgm.Key);
                 }
-            }
+                else if (sgm.Value == ISCOND)
+                    newFilter += conds[sgm.Key];
+                else
+                    newFilter += sgm.Key;
 
-            if(prevIsCondition)
-            {
-                end = filter.Length;
-                AddParam(parms, filter, start, end);
-                newFilter += " {" + i.ToString() + "}";
+                newFilter += " ";
             }
-            else
-                newFilter += filter.Substring(start, filter.Length - start);
 
             return newFilter;
         }
