@@ -59,6 +59,7 @@ namespace DBRunsE2ETests
             string contentStr;
             User user;
 
+
             bool appDebug = true;
             if (appDebug)
                 Settings.AppUri = Settings.AppUriDebug;
@@ -175,7 +176,7 @@ namespace DBRunsE2ETests
 
 
 
-
+resumeHere:
             #region NEW USER SIGNUP
 
             Console.WriteLine("=====> NEW USER SIGNING UP (ADMIN)");
@@ -324,11 +325,10 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> NEW USER SIGNED IN SUCCESSFULLY");
             Console.WriteLine();
 
-        #endregion NEW USER'S SUCCESSFUL SIGN-IN ATTEMPT
+            #endregion NEW USER'S SUCCESSFUL SIGN-IN ATTEMPT
+return;
 
 
-
-resumeHere:
 
             #region ADMIN SIGN-IN
 
@@ -371,12 +371,13 @@ resumeHere:
                         ""Location"":""Sesto Fiorentino,IT""
                     }
                 ";
-            response = await Utils.PostRequest("Runs", null, user.Id.ToString(), GetBearerTokenHeader(response), body);
+            queryString = "userId=" + user.Id.ToString();
+            response = await Utils.PostRequest("Runs", null, null, queryString, GetBearerTokenHeader(response), body);
 
             Console.WriteLine("=====> ADMIN ADDED FIRST RUN TO FIRST USER");
             Console.WriteLine();
 
-            #endregion ADMIN ADDING FIRST RUN TO FIRST USER
+        #endregion ADMIN ADDING FIRST RUN TO FIRST USER
 
 
 
@@ -397,9 +398,8 @@ resumeHere:
             Console.WriteLine("=====> ADMIN LISTED FIRST USER'S RUNS");
             Console.WriteLine();
 
-            #endregion ADMIN LISTING FIRST USER'S RUNS
+        #endregion ADMIN LISTING FIRST USER'S RUNS
 
-            return;
 
 
 
@@ -618,7 +618,7 @@ resumeHere:
             Console.WriteLine();
             Console.WriteLine();
 
-            #endregion SECOND USER POSTING THEIR OWN RUNS
+        #endregion SECOND USER POSTING THEIR OWN RUNS
 
 
 
@@ -755,7 +755,7 @@ resumeHere:
             Console.WriteLine("=====> REPORT RETRIEVED FOR YEAR 2020 PAGE 2");
             Console.WriteLine();
 
-            #endregion FIRST USER LISTING RUNS + REPORT
+        #endregion FIRST USER LISTING RUNS + REPORT
 
 
 
@@ -782,95 +782,9 @@ resumeHere:
 
 
 
-            #region MANAGER TRYING TO DELETE SECOND USER
+            #region MANAGER DELETING SECOND USER AND ALL THEIR RUNS
 
-            Console.WriteLine("=====> MANAGER TRYING TO DELETE SECOND USER");
-            Console.WriteLine();
-
-
-            Console.WriteLine("=====> MANAGER FAILED DELETING SECOND USER");
-            Console.WriteLine();
-
-        #endregion MANAGER TRYING TO DELETE SECOND USER
-
-
-
-
-            #region ADMIN SIGN-IN
-
-            Console.WriteLine("=====> ADMIN SIGNING IN");
-            Console.WriteLine();
-
-            body =
-                @"
-                    {
-                        ""Email"":""" + Settings.AdminEmail + @""",
-                        ""Password"":""" + Settings.Password + @"""
-                    }
-                ";
-            response = await Utils.PostRequest("Users", "SignIn", null, body);
-
-            Console.WriteLine("=====> ADMIN SIGNED IN");
-            Console.WriteLine();
-
-        #endregion ADMIN SIGN-IN
-
-
-
-
-            #region ADMIN BULK DELETING SECOND USER'S RUN RECORDS
-
-            Console.WriteLine("=====> ADMIN BULK DELETING SECOND USER'S RUN RECORDS");
-            Console.WriteLine();
-
-            queryString = "eMail=" + Settings.SecondUserEmail;
-            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
-            contentStr = await response.Content.ReadAsStringAsync();
-            user = JsonConvert.DeserializeObject<User>(contentStr);
-
-            queryString = "filter=userId eq '" + user.Id + "'";
-            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
-            contentStr = await response.Content.ReadAsStringAsync();
-            ItemList<Run> ilr = JsonConvert.DeserializeObject<ItemList<Run>>(contentStr);
-            // Suppose no more than one page of Runs
-            foreach(Run run in ilr.items)
-            {
-                response = await Utils.DeleteRequest("Runs", null, run.Id.ToString(), GetBearerTokenHeader(response));
-            }
-
-            Console.WriteLine("=====> ADMIN BULK DELETED SECOND USER'S RUN RECORDS");
-            Console.WriteLine();
-
-        #endregion ADMIN BULK DELETING SECOND USER'S RUN RECORDS
-
-
-
-
-            #region MANAGER SIGN-IN
-
-            Console.WriteLine("=====> MANAGER SIGNING IN");
-            Console.WriteLine();
-
-            body =
-                @"
-                    {
-                        ""Email"":""" + Settings.ManagerEmail + @""",
-                        ""Password"":""" + Settings.Password + @"""
-                    }
-                ";
-            response = await Utils.PostRequest("Users", "SignIn", null, body);
-
-            Console.WriteLine("=====> MANAGER SIGNED IN");
-            Console.WriteLine();
-
-            #endregion MANAGER SIGN-IN
-
-
-
-
-            #region MANAGER DELETING SECOND USER
-
-            Console.WriteLine("=====> MANAGER DELETING SECOND USER");
+            Console.WriteLine("=====> MANAGER DELETING SECOND USER AND ALL THEIR RUNS");
             Console.WriteLine();
 
             queryString = "eMail=" + Settings.SecondUserEmail;
@@ -885,7 +799,17 @@ resumeHere:
             else
             {
                 response = await Utils.DeleteRequest("Users", null, user.Id.ToString(), GetBearerTokenHeader(response));
-                Console.WriteLine("=====> MANAGER DELETED SECOND USER");
+                Console.WriteLine("=====> MANAGER DELETED SECOND USER AND ALL THEIR RUNS");
+                Console.WriteLine();
+            }
+
+            queryString = "eMail=" + Settings.SecondUserEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+            if (user == null)
+            {
+                Console.WriteLine("=====> SECOND USER NO LONGER EXISTS");
                 Console.WriteLine();
             }
 
@@ -983,7 +907,7 @@ resumeHere:
             Console.WriteLine("=====> ADMIN SIGNED IN");
             Console.WriteLine();
 
-        #endregion ADMIN SIGN-IN
+            #endregion ADMIN SIGN-IN
 
 
 
@@ -993,6 +917,13 @@ resumeHere:
             Console.WriteLine("=====> ADMIN VIEWING MANAGER'S REPORT");
             Console.WriteLine();
 
+            queryString = "eMail=" + Settings.ManagerEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            queryString = "year=2020&userId=" + user.Id.ToString();
+            response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
 
             Console.WriteLine("=====> ADMIN VIEWED MANAGER'S REPORT");
             Console.WriteLine();
@@ -1007,6 +938,22 @@ resumeHere:
             Console.WriteLine("=====> ADMIN DOWNGRADING MANAGER'S PERFORMANCE");
             Console.WriteLine();
 
+            queryString = "eMail=" + Settings.ManagerEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            queryString = "filter=userId eq '" + user.Id + "'";
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            ItemList<Run> ilr = JsonConvert.DeserializeObject<ItemList<Run>>(contentStr);
+            // Suppose no more than one page of Runs
+            foreach (Run run in ilr.items)
+            {
+                run.TimeRun = run.TimeRun * 2;
+                body = JsonConvert.SerializeObject(run);
+                response = await Utils.PutRequest("Runs", null, run.Id.ToString(), GetBearerTokenHeader(response), body);
+            }
 
             Console.WriteLine("=====> ADMIN DOWNGRADED MANAGER'S PERFORMANCE");
             Console.WriteLine();
@@ -1021,25 +968,105 @@ resumeHere:
             Console.WriteLine("=====> ADMIN VIEWING MANAGER'S REPORT");
             Console.WriteLine();
 
+            queryString = "eMail=" + Settings.ManagerEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            queryString = "year=2020&userId=" + user.Id.ToString();
+            response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
 
             Console.WriteLine("=====> ADMIN VIEWED MANAGER'S REPORT");
             Console.WriteLine();
 
-            #endregion ADMIN VIEWING MANAGER'S REPORT
+            #endregion ADMIN VIEWING USER'S REPORT
 
 
 
 
-            #region ADMIN DELETING MANAGER AND ALL THEIR RUNS
+            #region ADMIN DELETING MANAGER'S FIRST RUN
 
-            Console.WriteLine("=====> ADMIN DELETING MANAGER AND ALL THEIR RUNS");
+            Console.WriteLine("=====> ADMIN DELETING MANAGER'S FIRST RUN");
             Console.WriteLine();
 
+            queryString = "eMail=" + Settings.ManagerEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
 
-            Console.WriteLine("=====> ADMIN DELETED MANAGER AND ALL THEIR RUNS");
+            queryString = "filter=userId eq '" + user.Id + "'";
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            Run firstRun = JsonConvert.DeserializeObject<ItemList<Run>>(contentStr).items.FirstOrDefault();
+            response = await Utils.DeleteRequest("Runs", null, firstRun.Id.ToString(), GetBearerTokenHeader(response));
+
+            Console.WriteLine("=====> ADMIN DELETING MANAGER'S FIRST RUN");
             Console.WriteLine();
 
-            #endregion ADMIN DELETING MANAGER AND ALL THEIR RUNS
+            #endregion ADMIN DELETING MANAGER'S FIRST RUN
+
+
+
+
+            #region ADMIN VIEWING MANAGER'S REPORT
+
+            Console.WriteLine("=====> ADMIN VIEWING MANAGER'S REPORT");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.ManagerEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            queryString = "year=2020&userId=" + user.Id.ToString();
+            response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> ADMIN VIEWED MANAGER'S REPORT");
+            Console.WriteLine();
+
+            #endregion ADMIN VIEWING USER'S REPORT
+
+
+
+
+            #region ADMIN BULK DELETING MANAGER'S REMAINING RUNS
+
+            Console.WriteLine("=====> ADMIN BULK DELETING MANAGER'S REMAINING RUNS");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.ManagerEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            response = await Utils.DeleteRequest("Runs", "DeleteByUser", user.Id.ToString(), GetBearerTokenHeader(response));
+
+            Console.WriteLine("=====> ADMIN BULK DELETING MANAGER'S REMAINING RUNS");
+            Console.WriteLine();
+
+            #endregion ADMIN BULK DELETING MANAGER'S REMAINING RUNS
+
+
+
+
+            #region ADMIN VIEWING MANAGER'S REPORT
+
+            Console.WriteLine("=====> ADMIN VIEWING MANAGER'S REPORT");
+            Console.WriteLine();
+
+            queryString = "eMail=" + Settings.ManagerEmail;
+            response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
+            contentStr = await response.Content.ReadAsStringAsync();
+            user = JsonConvert.DeserializeObject<User>(contentStr);
+
+            queryString = "year=2020&userId=" + user.Id.ToString();
+            response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> ADMIN VIEWED MANAGER'S REPORT");
+            Console.WriteLine();
+
+            #endregion ADMIN VIEWING USER'S REPORT
+
 
 
 

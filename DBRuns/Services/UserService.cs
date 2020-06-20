@@ -169,17 +169,17 @@ namespace DBRuns.Services
 
             await
                 Utils.SendMailAsync(
-                    "smtps.aruba.it",
-                    587,
-                    "info@elidentgroup.it",
-                    "infoeli12",
+                    Configuration["MailHost"],
+                    Int32.Parse(Configuration["SmtpPort"]),
+                    Configuration["MailUser"],
+                    Configuration["MailPwd"],
                     true,
                     true,
                     emailTitle,
                     new List<string>() { user.Email },
                     null,
                     null,
-                    "info@elidentgroup.it",
+                    Configuration["MailFrom"],
                     null,
                     null,
                     emailBody,

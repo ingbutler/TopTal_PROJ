@@ -27,6 +27,13 @@ namespace DBRuns.Services
 
 
 
+        public async Task<Run> GetRunAsync(Guid id)
+        {
+            return await Context.Runs.FirstOrDefaultAsync(x => x.Id == id);
+        }
+
+
+
         public async Task<ItemList<Run>> GetRunAsync(Guid? userId, string filter, int itemsPerPage, int pageNumber)
         {
             if (itemsPerPage == 0)
@@ -152,52 +159,27 @@ namespace DBRuns.Services
 
 
 
-        public async Task<int> UpdateRunAsync(Guid id, Run run)
+        public async Task<int> UpdateRunAsync(Run run)
         {
-            if (id != run.Id)
-                throw new ArgumentException("Id not corresponding");
-
             Context.Entry(run).State = EntityState.Modified;
-
-            //try
-            //{
-            //    await Context.SaveChangesAsync();
-            //}
-            //catch (DbUpdateConcurrencyException)
-            //{
-            //    if (!RunExists(id))
-            //    {
-            //        throw new DbUpdateConcurrencyException("Item not updated");
-            //    }
-            //    else
-            //    {
-            //        throw;
-            //    }
-            //}
 
             return await Context.SaveChangesAsync();
         }
 
 
 
-        public async Task<Run> DeleteRunAsync(Guid id)
+        public async Task<int> DeleteRunAsync(Run run)
         {
-            var run = await Context.Runs.FindAsync(id);
-            if (run == null)
-                return null;
-
             Context.Runs.Remove(run);
-            await Context.SaveChangesAsync();
-
-            return run;
+            return await Context.SaveChangesAsync();
         }
 
 
 
         public async Task DeleteRunByUserAsync(Guid userId)
         {
-            string sql = "delete from Runs where UserId = @userId";
-            await Context.Database.ExecuteSqlCommandAsync(sql, userId);
+            string sql = "delete from Runs where UserId = {0}";
+            await Context.Database.ExecuteSqlRawAsync(sql, userId);
         }
 
 
@@ -247,6 +229,7 @@ namespace DBRuns.Services
                         tt.WeekStart
                        ,tt.WeekNumber
                        ,tt.Year
+                       ,tt.RunCount
                        ,tt.TotalTime
                        ,tt.TotalDistance
                        ,(tt.TotalDistance / tt.TotalTime) as AverageSpeed
@@ -256,6 +239,7 @@ namespace DBRuns.Services
                                 t.WeekStart
                                ,t.WeekNumber
                                ,t.Year
+                               ,count(*) as RunCount
                                ,sum(t.TimeRun) as TotalTime
                                ,sum(t.Distance) as TotalDistance
                             from

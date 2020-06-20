@@ -75,12 +75,12 @@ namespace DBRunsE2ETests
 
         public static async Task<HttpResponseMessage> PostRequest(string controller, string action, List<KeyValuePair<string, string>> headers, string body)
         {
-            return await PostRequest(controller, action, null, headers, body);
+            return await PostRequest(controller, action, null, null, headers, body);
         }
 
 
 
-        public static async Task<HttpResponseMessage> PostRequest(string controller, string action, string id, List<KeyValuePair<string, string>> headers, string body)
+        public static async Task<HttpResponseMessage> PostRequest(string controller, string action, string id, string queryString, List<KeyValuePair<string, string>> headers, string body)
         {
             HttpRequestMessage request = new HttpRequestMessage();
             request.Method = HttpMethod.Post;
@@ -89,6 +89,7 @@ namespace DBRunsE2ETests
                     Settings.AppUri + controller 
                     + (String.IsNullOrEmpty(action) ? "" : ("/" + action))
                     + (String.IsNullOrEmpty(id) ? "" : ("/" + id))
+                    + (String.IsNullOrEmpty(queryString) ? "" : ("?" + queryString))
                 );
 
             if (headers != null)
