@@ -59,9 +59,13 @@ namespace DBRuns.Controllers
         // GET: api/Users/VerifyUser/00000000-0000-0000-0000-000000000000
         [HttpGet("[action]/{id}")]
         [AllowAnonymous]
-        public async Task VerifyUser(Guid id)
+        public async Task<ContentResult> VerifyUser(Guid id)
         {
-            await UserService.VerifyUserAsync(id);
+            int result = await UserService.VerifyUserAsync(id);
+            if(result == 1)
+                return  base.Content("<div>Well done! Your account has been confirmed</div>", "text/html");
+            else
+                return base.Content("<div>Sorry, user not found</div>", "text/html");
         }
 
 

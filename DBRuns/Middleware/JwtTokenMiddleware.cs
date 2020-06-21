@@ -23,15 +23,10 @@ namespace DBRuns.Middleware
 
         public async Task Invoke(HttpContext context)
         {
-            //Nel momento in cui un altro middleware produce la risposta
-            //emettiamo il token nell'intestazione intestazione X-Token.
-            //L'intestazione potrebbe avere un altro nome, l'importante è che
-            //sia documentata ai client che useranno la nostra API
             context.Response.OnStarting(() => {
                 var identity = context.User.Identity as ClaimsIdentity;
                 if (identity.IsAuthenticated)
                 {
-                    //Il client potrà usare questo nuovo token nella sua prossima richiesta
                     context.Response.Headers.Add("X-Token", CreateTokenForIdentity(identity));
                 }
                 return Task.CompletedTask;
