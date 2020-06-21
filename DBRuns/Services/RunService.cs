@@ -102,7 +102,7 @@ namespace DBRuns.Services
             if (runInput.Distance <= 0)
                 throw new ArgumentOutOfRangeException("Distance must be greater than zero");
 
-            if (runInput.TimeRun <= 0)
+            if (runInput.Time <= 0)
                 throw new ArgumentOutOfRangeException("Time must be greater than zero");
 
 
@@ -148,7 +148,7 @@ namespace DBRuns.Services
                     UserId = userId,
                     Date = runInput.Date,
                     Distance = runInput.Distance,
-                    TimeRun = runInput.TimeRun,
+                    Time = runInput.Time,
                     Location = runInput.Location,
                     Weather = weather
                 };
@@ -240,7 +240,7 @@ namespace DBRuns.Services
                                ,t.WeekNumber
                                ,t.Year
                                ,count(*) as RunCount
-                               ,sum(t.TimeRun) as TotalTime
+                               ,sum(t.Time) as TotalTime
                                ,sum(t.Distance) as TotalDistance
                             from
 	                            (
@@ -249,7 +249,7 @@ namespace DBRuns.Services
 		                               ,datepart(week, Date) as WeekNumber
                                        ,year(Date) as Year
                                        ,Distance
-                                       ,TimeRun
+                                       ,Time
 		                            from
 			                            Runs
                                     where

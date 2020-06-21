@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using DBRuns.Models;
 using DBRuns.Services;
+using Microsoft.Data.SqlClient;
 
 namespace DBRuns.Controllers
 {
@@ -31,9 +32,19 @@ namespace DBRuns.Controllers
 
         // GET: api/Users
         [HttpGet]
-        public async Task<ItemList<User>> GetUser([FromQuery(Name = "filter")] string filter, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
+        public async Task<ActionResult<ItemList<User>>> GetUser([FromQuery(Name = "filter")] string filter, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
         {
-            return await UserService.GetUserAsync(filter, itemsPerPage, pageNumber);
+            ItemList<User> itemList = null;
+            try
+            {
+                itemList = await UserService.GetUserAsync(filter, itemsPerPage, pageNumber);
+            }
+            catch(SqlException ex)
+            {
+                return BadRequest("Check filter condition");
+            }
+
+            return itemList;
         }
 
 
@@ -125,7 +136,7 @@ namespace DBRuns.Controllers
             if (!user.IsVerified)
             {
                 Task task = UserService.SendVerificationMailAsync(user);
-                return Unauthorized("User not verified. Verification mail sent again.Check mail");
+                return Unauthorized("User not verified. Verification mail sent again. Check mail");
             }
             else
             {

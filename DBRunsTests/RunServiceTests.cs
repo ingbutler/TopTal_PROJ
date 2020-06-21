@@ -50,7 +50,7 @@ namespace DBRunsTests
                 {
                     Date = new System.DateTime(2020, 6, 20, 19, 51, 0),
                     Distance = 5600,
-                    TimeRun = 1100,
+                    Time = 1100,
                     Location = "Poggibonsi,IT"
                 };
 
@@ -75,7 +75,7 @@ namespace DBRunsTests
         [DataRow(-100, 1000)]
         [DataRow(1000, 0)]
         [DataRow(1000, -100)]
-        public async Task InsertDistanceTimeLEZero(int distance, int timeRun)
+        public async Task InsertDistanceTimeLEZero(int distance, int time)
         {
 
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
@@ -96,7 +96,7 @@ namespace DBRunsTests
                 {
                     Date = new System.DateTime(2020, 6, 20, 19, 51, 0),
                     Distance = distance,
-                    TimeRun = timeRun,
+                    Time = time,
                     Location = "Poggibonsi,IT"
                 };
 
@@ -153,7 +153,7 @@ namespace DBRunsTests
                 {
                     Date = new System.DateTime(2020, 6, 20, 19, 51, 0),
                     Distance = 5600,
-                    TimeRun = 1100,
+                    Time = 1100,
                     Location = "Poggibonsi,IT"
                 };
 

@@ -42,7 +42,7 @@ namespace DBRunsE2ETests
                 for (int i = count; i > 0; i--)
                 {
                     var header = client.GetMessageHeaders(i);
-                    if (header.DateSent >= TimeZoneInfo.ConvertTimeToUtc(dateSent)
+                    if (header.DateSent >= TimeZoneInfo.ConvertTimeToUtc(dateSent.AddTicks(-(dateSent.Ticks % TimeSpan.TicksPerSecond)))    // Ticks datepart is not present in the header
                         && header.Subject == "Please confirm your account")
                     {
                         Message message = client.GetMessage(count);

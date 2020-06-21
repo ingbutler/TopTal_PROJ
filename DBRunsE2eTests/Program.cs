@@ -20,6 +20,8 @@ namespace DBRunsE2ETests
 
     public struct Settings
     {
+        public const bool SingleStepExecution = true;
+
         public const string AppPath = @"C:\Progetti\TopTal_PROJ\DBRuns\bin\Debug\netcoreapp3.1\DBRuns.exe";
 
         public const string MailServer = "pop.gmail.com";
@@ -74,10 +76,12 @@ namespace DBRunsE2ETests
             }
 
 
-            goto resumeHere;
+            //goto resumeHere;
+            //resumeHere
 
 
-            #region FIRST USER SIGNUP (ADMIN)
+
+            #region FIRST USER SIGN-UP (ADMIN)
 
             Console.WriteLine("=====> FIRST USER SIGNING UP (ADMIN)");
             Console.WriteLine();
@@ -101,7 +105,30 @@ namespace DBRunsE2ETests
             Console.WriteLine();
 
             VerificationLink = Utils.RetrieveVerificationLink(dateTimeMail);
-            if(VerificationLink == "")
+            if(VerificationLink != "")
+            {
+                Console.WriteLine("Verification link " + VerificationLink);
+                Console.WriteLine();
+            }
+            else
+            {
+                Console.WriteLine("No verification mail was found");
+                return;
+            }
+
+            dateTimeMail = DateTime.Now;
+            Console.WriteLine("=====> REQUESTING MAIL RESEND - " + dateTimeMail.ToString());
+            Console.WriteLine();
+
+            response = await Utils.PostRequest("Users", "SignIn", null, body);
+
+            VerificationLink = Utils.RetrieveVerificationLink(dateTimeMail);
+            if (VerificationLink != "")
+            {
+                Console.WriteLine("Verification link " + VerificationLink);
+                Console.WriteLine();
+            }
+            else
             {
                 Console.WriteLine("No verification mail was found");
                 return;
@@ -112,7 +139,14 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> FIRST USER'S MAIL VERIFIED");
             Console.WriteLine();
 
-            #endregion FIRST USER SIGNUP (ADMIN)
+            #endregion FIRST USER SIGN-UP (ADMIN)
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -157,26 +191,33 @@ namespace DBRunsE2ETests
 
 
 
-            #region ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT PASSWORD
+            #region ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT EMAIL
         
-            Console.WriteLine("=====> ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT PASSWORD");
+            Console.WriteLine("=====> ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT EMAIL");
             Console.WriteLine();
 
-            // To be able to create another user with same password...
+            // To be able to create another user with same email...
 
             user.Email = Settings.AdminEmail;
             body = JsonConvert.SerializeObject(user);
 
             response = await Utils.PutRequest("Users", null, user.Id.ToString(), GetBearerTokenHeader(response), body);
 
-            Console.WriteLine("=====> ADMIN SAVED THEIR OWN ACCOUNT WITH A DIFFERENT PASSWORD");
+            Console.WriteLine("=====> ADMIN SAVED THEIR OWN ACCOUNT WITH A DIFFERENT EMAIL");
             Console.WriteLine();
 
-            #endregion ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT PASSWORD
+            #endregion ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT EMAIL
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
-resumeHere:
+
             #region NEW USER SIGNUP
 
             Console.WriteLine("=====> NEW USER SIGNING UP (ADMIN)");
@@ -233,10 +274,17 @@ resumeHere:
             response = await Utils.PostRequest("Users", "SignIn", null, body);
             response = await Utils.PostRequest("Users", "SignIn", null, body);
 
-            Console.WriteLine("=====> NEW USER FAILED SIGNIN FOR THREE TIMES");
+            Console.WriteLine("=====> NEW USER FAILED SIGN-IN THREE TIMES");
             Console.WriteLine();
 
             #endregion NEW USER FAILS SIGN-IN
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -258,7 +306,14 @@ resumeHere:
             Console.WriteLine("=====> USER WAS BLOCKED");
             Console.WriteLine();
 
-        #endregion NEW USER'S FURTHER SIGN-IN ATTEMPT
+            #endregion NEW USER'S FURTHER SIGN-IN ATTEMPT
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -303,7 +358,14 @@ resumeHere:
             Console.WriteLine("=====> ADMIN UNBLOCKED USER'S ACCOUNT");
             Console.WriteLine();
 
-        #endregion ADMIN UNBLOCKING USER'S ACCOUNT
+            #endregion ADMIN UNBLOCKING USER'S ACCOUNT
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -326,7 +388,14 @@ resumeHere:
             Console.WriteLine();
 
             #endregion NEW USER'S SUCCESSFUL SIGN-IN ATTEMPT
-return;
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
+
 
 
 
@@ -367,7 +436,7 @@ return;
                     {
                         ""Date"":""2020-06-01T19:06"",
                         ""Distance"":5800,
-                        ""TimeRun"":1480,
+                        ""Time"":1480,
                         ""Location"":""Sesto Fiorentino,IT""
                     }
                 ";
@@ -377,7 +446,14 @@ return;
             Console.WriteLine("=====> ADMIN ADDED FIRST RUN TO FIRST USER");
             Console.WriteLine();
 
-        #endregion ADMIN ADDING FIRST RUN TO FIRST USER
+            #endregion ADMIN ADDING FIRST RUN TO FIRST USER
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -398,7 +474,14 @@ return;
             Console.WriteLine("=====> ADMIN LISTED FIRST USER'S RUNS");
             Console.WriteLine();
 
-        #endregion ADMIN LISTING FIRST USER'S RUNS
+            #endregion ADMIN LISTING FIRST USER'S RUNS
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -425,6 +508,13 @@ return;
 
             #endregion ADMIN CREATING MANAGER
 
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
+
 
 
 
@@ -446,7 +536,14 @@ return;
             Console.WriteLine("=====> MANAGER CHANGED THEIR OWN PASSWORD");
             Console.WriteLine();
 
-        #endregion MANAGER CHANGING THEIR OWN PASSWORD
+            #endregion MANAGER CHANGING THEIR OWN PASSWORD
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -495,6 +592,13 @@ return;
 
             #endregion MANAGER CREATING SECOND USER
 
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
+
 
 
 
@@ -503,7 +607,7 @@ return;
             queryString = "eMail=" + Settings.SecondUserEmail;
             response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
 
-            Console.WriteLine("=====> MANAGER UPDATING SECOND USER (setting IsVerified)");
+            Console.WriteLine("=====> MANAGER UPDATING SECOND USER (setting IsVerified = true)");
             Console.WriteLine();
 
             contentStr = await response.Content.ReadAsStringAsync();
@@ -514,7 +618,7 @@ return;
 
             response = await Utils.PutRequest("Users", null, user.Id.ToString(), GetBearerTokenHeader(response), body);
 
-            Console.WriteLine("=====> MANAGER UPDATED SECOND USER");
+            Console.WriteLine("=====> MANAGER UPDATED SECOND USER (set IsVerified = true)");
             Console.WriteLine();
 
             // Reading updated record
@@ -524,7 +628,14 @@ return;
             Console.WriteLine();
             Console.WriteLine();
 
-        #endregion MANAGER UPDATING SECOND USER (setting IsVerified)
+            #endregion MANAGER UPDATING SECOND USER (setting IsVerified)
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -561,7 +672,7 @@ return;
                     {
                         ""Date"":""2020-06-11T19:06"",
                         ""Distance"":7600,
-                        ""TimeRun"":1520,
+                        ""Time"":1520,
                         ""Location"":""Firenze,IT""
                     }
                 ";
@@ -572,7 +683,7 @@ return;
                     {
                         ""Date"":""2020-06-12T19:06"",
                         ""Distance"":12500,
-                        ""TimeRun"":3640,
+                        ""Time"":3640,
                         ""Location"":""Firenze,IT""
                     }
                 ";
@@ -583,7 +694,7 @@ return;
                     {
                         ""Date"":""2020-06-14T19:06"",
                         ""Distance"":12700,
-                        ""TimeRun"":3600,
+                        ""Time"":3600,
                         ""Location"":""Firenze,IT""
                     }
                 ";
@@ -594,7 +705,7 @@ return;
                     {
                         ""Date"":""2020-06-15T12:07"",
                         ""Distance"":13200,
-                        ""TimeRun"":3430,
+                        ""Time"":3430,
                         ""Location"":""Firenze,IT""
                     }
                 ";
@@ -605,7 +716,7 @@ return;
                     {
                         ""Date"":""2020-06-18T19:06"",
                         ""Distance"":16200,
-                        ""TimeRun"":5780,
+                        ""Time"":5780,
                         ""Location"":""Firenze,IT""
                     }
                 ";
@@ -618,7 +729,14 @@ return;
             Console.WriteLine();
             Console.WriteLine();
 
-        #endregion SECOND USER POSTING THEIR OWN RUNS
+            #endregion SECOND USER POSTING THEIR OWN RUNS
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -655,7 +773,7 @@ return;
                     {
                         ""Date"":""2020-06-11T19:06"",
                         ""Distance"":6000,
-                        ""TimeRun"":1520,
+                        ""Time"":1520,
                         ""Location"":""Sesto Fiorentino,IT""
                     }
                 ";
@@ -666,7 +784,7 @@ return;
                     {
                         ""Date"":""2020-06-12T19:06"",
                         ""Distance"":12000,
-                        ""TimeRun"":3640,
+                        ""Time"":3640,
                         ""Location"":""Campi Bisenzio,IT""
                     }
                 ";
@@ -677,7 +795,7 @@ return;
                     {
                         ""Date"":""2020-06-14T19:06"",
                         ""Distance"":12000,
-                        ""TimeRun"":3600,
+                        ""Time"":3600,
                         ""Location"":""Campi Bisenzio,IT""
                     }
                 ";
@@ -688,7 +806,7 @@ return;
                     {
                         ""Date"":""2020-06-15T12:07"",
                         ""Distance"":12000,
-                        ""TimeRun"":3430,
+                        ""Time"":3430,
                         ""Location"":""Campi Bisenzio,IT""
                     }
                 ";
@@ -699,7 +817,7 @@ return;
                     {
                         ""Date"":""2020-06-18T19:06"",
                         ""Distance"":15000,
-                        ""TimeRun"":5780,
+                        ""Time"":5780,
                         ""Location"":""Campi Bisenzio,IT""
                     }
                 ";
@@ -714,15 +832,31 @@ return;
 
             #endregion FIRST USER POSTING RUNS
 
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
+
 
 
 
             #region FIRST USER FILTERING RUNS + REPORT
 
-            Console.WriteLine("=====> FIRST USER FILTERING RUNS");
+            Console.WriteLine("=====> FIRST USER FILTERING RUNS WITH BAD FILTER - filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18') and time ne 3430");
             Console.WriteLine();
 
-            queryString = "filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18')) and timerun ne 3430";
+            queryString = "filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18')) and time ne 3430";
+            response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> FIRST USER FILTERED RUNS WITH BAD FILTER");
+            Console.WriteLine();
+
+            Console.WriteLine("=====> FIRST USER FILTERING RUNS - filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18')) and time ne 3430");
+            Console.WriteLine();
+
+            queryString = "filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18')) and time ne 3430";
             response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
 
             Console.WriteLine("=====> FIRST USER FILTERED RUNS");
@@ -740,7 +874,7 @@ return;
             Console.WriteLine("=====> RETRIEVING REPORT FOR YEAR 2020 PAGE 1");
             Console.WriteLine();
 
-            queryString = "year=2020&itemsperpage=1&pagenumber=1";
+            queryString = "year=2020&itemsperpage=2&pagenumber=1";
             response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
 
             Console.WriteLine("=====> REPORT RETRIEVED FOR YEAR 2020 PAGE 1");
@@ -749,13 +883,20 @@ return;
             Console.WriteLine("=====> RETRIEVING REPORT FOR YEAR 2020 PAGE 2");
             Console.WriteLine();
 
-            queryString = "year=2020&itemsperpage=1&pagenumber=2";
+            queryString = "year=2020&itemsperpage=2&pagenumber=2";
             response = await Utils.GetRequest("Runs", "GetReport", GetBearerTokenHeader(response), queryString);
 
             Console.WriteLine("=====> REPORT RETRIEVED FOR YEAR 2020 PAGE 2");
             Console.WriteLine();
 
-        #endregion FIRST USER LISTING RUNS + REPORT
+            #endregion FIRST USER LISTING RUNS + REPORT
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -778,6 +919,29 @@ return;
             Console.WriteLine();
 
             #endregion MANAGER SIGN-IN
+
+
+
+
+            #region MANAGER FILTERING USERS
+
+            Console.WriteLine("=====> MANAGER FILTERING USERS - filter=email ge 'a' and email le 'zzz' and (isverified eq false or role eq 'admin')");
+            Console.WriteLine();
+
+            queryString = "filter=email ge 'a' and email le 'zzz' and (isverified eq false or role eq 'admin')";
+            response = await Utils.GetRequest("Users", null, GetBearerTokenHeader(response), queryString);
+
+            Console.WriteLine("=====> MANAGER FILTERED USERS");
+            Console.WriteLine();
+
+            #endregion MANAGER FILTERING USERS
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -815,6 +979,13 @@ return;
 
             #endregion MANAGER DELETING SECOND USER
 
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
+
 
 
 
@@ -828,7 +999,7 @@ return;
                     {
                         ""Date"":""2020-06-11T19:06"",
                         ""Distance"":6000,
-                        ""TimeRun"":1520,
+                        ""Time"":1520,
                         ""Location"":""Scandicci,IT""
                     }
                 ";
@@ -839,7 +1010,7 @@ return;
                     {
                         ""Date"":""2020-06-12T19:06"",
                         ""Distance"":12000,
-                        ""TimeRun"":3640,
+                        ""Time"":3640,
                         ""Location"":""Scandicci,IT""
                     }
                 ";
@@ -850,7 +1021,7 @@ return;
                     {
                         ""Date"":""2020-06-14T19:06"",
                         ""Distance"":12000,
-                        ""TimeRun"":3600,
+                        ""Time"":3600,
                         ""Location"":""Scandicci,IT""
                     }
                 ";
@@ -861,7 +1032,7 @@ return;
                     {
                         ""Date"":""2020-06-15T12:07"",
                         ""Distance"":12000,
-                        ""TimeRun"":3430,
+                        ""Time"":3430,
                         ""Location"":""Scandicci,IT""
                     }
                 ";
@@ -872,7 +1043,7 @@ return;
                     {
                         ""Date"":""2020-06-18T19:06"",
                         ""Distance"":15000,
-                        ""TimeRun"":5780,
+                        ""Time"":5780,
                         ""Location"":""Scandicci,IT""
                     }
                 ";
@@ -885,7 +1056,14 @@ return;
             Console.WriteLine();
             Console.WriteLine();
 
-        #endregion MANAGER POSTING THEIR OWN RUNS
+            #endregion MANAGER POSTING THEIR OWN RUNS
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -930,6 +1108,13 @@ return;
 
             #endregion ADMIN VIEWING USER'S REPORT
 
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
+
 
 
 
@@ -950,7 +1135,7 @@ return;
             // Suppose no more than one page of Runs
             foreach (Run run in ilr.items)
             {
-                run.TimeRun = run.TimeRun * 2;
+                run.Time = run.Time * 2;
                 body = JsonConvert.SerializeObject(run);
                 response = await Utils.PutRequest("Runs", null, run.Id.ToString(), GetBearerTokenHeader(response), body);
             }
@@ -980,6 +1165,13 @@ return;
             Console.WriteLine();
 
             #endregion ADMIN VIEWING USER'S REPORT
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -1025,6 +1217,13 @@ return;
             Console.WriteLine();
 
             #endregion ADMIN VIEWING USER'S REPORT
+
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
 
 
 
@@ -1082,6 +1281,9 @@ return;
             string token = response.Headers.GetValues("x-token").First();
             return new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("authorization", "Bearer " + token) };
         }
+
+
+
 
     }
 

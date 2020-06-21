@@ -7,6 +7,7 @@ using DBRuns.Models;
 using DBRuns.Services;
 using System.Security.Claims;
 using System;
+using Microsoft.Data.SqlClient;
 
 namespace DBRuns.Controllers
 {
@@ -30,13 +31,23 @@ namespace DBRuns.Controllers
 
         // GET: api/Runs
         [HttpGet]
-        public async Task<ItemList<Run>> GetRun([FromQuery(Name = "filter")] string filter, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
+        public async Task<ActionResult<ItemList<Run>>> GetRun([FromQuery(Name = "filter")] string filter, [FromQuery(Name = "itemsPerPage")] int itemsPerPage, [FromQuery(Name = "pageNumber")] int pageNumber)
         {
             Guid? userId = null;
             if (Utils.GetUserRole(this.User) != Roles.ADMIN)
                 userId = Utils.GetUserId(this.User);
 
-            return await RunService.GetRunAsync(userId, filter, itemsPerPage, pageNumber);
+            ItemList<Run> itemList = null;
+            try
+            {
+                itemList = await RunService.GetRunAsync(userId, filter, itemsPerPage, pageNumber);
+            }
+            catch(SqlException ex)
+            {
+                return BadRequest("Check filter condition");
+            }
+
+            return itemList;
         }
 
 

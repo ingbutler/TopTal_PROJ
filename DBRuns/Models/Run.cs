@@ -11,7 +11,7 @@ namespace DBRuns.Models
         [Required]
         public decimal Distance { get; set; }
         [Required]
-        public decimal TimeRun { get; set; }
+        public decimal Time { get; set; }
         [Required]
         public string Location { get; set; }
     }
