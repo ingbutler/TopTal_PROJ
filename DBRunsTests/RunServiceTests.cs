@@ -1,18 +1,16 @@
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using DBRuns.Controllers;
 using DBRuns.Data;
 using DBRuns.Models;
 using DBRuns.Services;
-using DBRuns.Controllers;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http;
 
 namespace DBRunsTests
 {
@@ -21,25 +19,27 @@ namespace DBRunsTests
     public class RunServiceTests
     {
 
+        //new DBRunContext(
+        //    new DbContextOptionsBuilder<DBRunContext>().UseSqlServer(
+        //        configuration.GetConnectionString("DefaultConnection")
+        //    ).Options
+        //),
+
+
+
+
         [TestMethod]
         public async Task InsertOk()
         {
-
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddJsonFile("AppSettings.json");
             IConfiguration configuration = configurationBuilder.Build();
 
             RunService srv =
                 new RunService(
-                    //new DBRunContext(
-                    //    new DbContextOptionsBuilder<DBRunContext>().UseSqlServer(
-                    //        configuration.GetConnectionString("DefaultConnection")
-                    //    ).Options
-                    //),
                     new DBRunContext(new DbContextOptionsBuilder<DBRunContext>().UseInMemoryDatabase("DBRuns").Options),
                     configuration
                 );
-
 
 
             // Arrange
@@ -110,7 +110,6 @@ namespace DBRunsTests
                             runInput01
                         )
                 );
-
         }
 
 
@@ -118,18 +117,12 @@ namespace DBRunsTests
         [TestMethod]
         public async Task PostRunOk()
         {
-
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddJsonFile("AppSettings.json");
             IConfiguration configuration = configurationBuilder.Build();
 
             RunService srv =
                 new RunService(
-                    //new DBRunContext(
-                    //    new DbContextOptionsBuilder<DBRunContext>().UseSqlServer(
-                    //        configuration.GetConnectionString("DefaultConnection")
-                    //    ).Options
-                    //),
                     new DBRunContext(new DbContextOptionsBuilder<DBRunContext>().UseInMemoryDatabase("DBRuns").Options),
                     configuration
                 );
@@ -146,8 +139,6 @@ namespace DBRunsTests
 
 
             // Arrange
-            ActionResult<Run> expected = new NoContentResult();
-
             RunInput runInput01 =
                 new RunInput()
                 {
@@ -159,7 +150,7 @@ namespace DBRunsTests
 
 
             // Act
-            ActionResult<Run> retValue =
+            IActionResult retValue =
                 await rc.PostRun(
                         new Guid("00000000-0000-0000-0000-000000000000"),
                         runInput01
@@ -167,9 +158,7 @@ namespace DBRunsTests
 
 
             // Assert
-            ActionResult<Run> actual = retValue;
-            Assert.AreEqual(expected, actual, "Ok, record inserted");
-
+            Assert.IsTrue(retValue is OkResult);
         }
 
 

@@ -66,7 +66,7 @@ namespace DBRuns.Controllers
 
         // POST: api/Runs
         [HttpPost]
-        public async Task<ActionResult<Run>> PostRun([FromQuery(Name = "userId")] Guid userId, RunInput runInput)
+        public async Task<IActionResult> PostRun([FromQuery(Name = "userId")] Guid userId, RunInput runInput)
         {
             if (!ModelState.IsValid)
                 return BadRequest();
@@ -74,12 +74,14 @@ namespace DBRuns.Controllers
             if (Utils.GetUserRole(this.User) != Roles.ADMIN)
                 userId = Utils.GetUserId(this.User);
 
-            await RunService.InsertRunAsync(
+            int result = await RunService.InsertRunAsync(
                     userId,
                     runInput
                 );
-            
-            return NoContent();
+            if (result == 1)
+                return Ok();
+            else
+                return Problem("Record creation was not possible");
         }
 
 
@@ -99,15 +101,17 @@ namespace DBRuns.Controllers
             }
 
             int result = await RunService.UpdateRunAsync(run);
-
-            return NoContent();
+            if (result == 1)
+                return Ok();
+            else
+                return Problem("The record could not be updated");
         }
 
 
 
         // DELETE: api/Runs/5
         [HttpDelete("{id}")]
-        public async Task<ActionResult<Run>> DeleteRun(Guid id)
+        public async Task<IActionResult> DeleteRun(Guid id)
         {
             Run run = await RunService.GetRunAsync(id);
 
@@ -120,9 +124,9 @@ namespace DBRuns.Controllers
 
             int result = await RunService.DeleteRunAsync(run);
             if (result == 0)
-                return NotFound();
+                return NotFound("No record could be deleted");
             else
-                return run;
+                return Ok();
         }
 
 
@@ -130,10 +134,13 @@ namespace DBRuns.Controllers
         // DELETE: api/Runs/5
         [HttpDelete("[action]/{userId}")]
         [Authorize(Roles = Roles.ADMIN)]
-        public async Task<ActionResult<Run>> DeleteByUser(Guid userId)
+        public async Task<IActionResult> DeleteByUser(Guid userId)
         {
-            await RunService.DeleteRunByUserAsync(userId);
-            return NoContent();
+            int result = await RunService.DeleteRunByUserAsync(userId);
+            if(result == 0)
+                return NotFound("No record was deleted");
+            else
+                return Ok();
         }
 
     }

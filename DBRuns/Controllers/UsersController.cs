@@ -51,18 +51,26 @@ namespace DBRuns.Controllers
 
         // GET: api/Users
         [HttpGet("{id}")]
-        public async Task<User> GetUser(Guid id)
+        public async Task<ActionResult<User>> GetUser(Guid id)
         {
-            return await UserService.GetUserAsync(id);
+            User user = await UserService.GetUserAsync(id);
+            if (user == null)
+                return NotFound("No user with such id");
+            else
+                return user;
         }
 
 
 
         // GET: api/Users
         [HttpGet("[action]")]
-        public async Task<User> GetUserByEmail([FromQuery(Name = "Email")] string email)
+        public async Task<ActionResult<User>> GetUserByEmail([FromQuery(Name = "Email")] string email)
         {
-            return await UserService.GetUserByEmailAsync(email);
+            User user = await UserService.GetUserByEmailAsync(email);
+            if (user == null)
+                return NotFound("No user with such EMail");
+            else
+                return user;
         }
 
 
@@ -83,14 +91,18 @@ namespace DBRuns.Controllers
 
         // POST: api/Users
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        public async Task<IActionResult> PostUser(User user)
         {
             if (!ModelState.IsValid)
                 return BadRequest();
 
-            await UserService.InsertUserAsync(user);
-
-            return NoContent();
+            int result = await UserService.InsertUserAsync(user);
+            if (result == 1)
+                return Ok();
+            else if (result == -1)
+                return Conflict("Account already exists");
+            else
+                return Problem("User creation was not possible");
         }
 
 
@@ -98,23 +110,17 @@ namespace DBRuns.Controllers
         // POST: api/Users/SignUp
         [HttpPost("[action]")]
         [AllowAnonymous]
-        public async Task<ActionResult<User>> SignUp(SignData signData)
+        public async Task<IActionResult> SignUp(SignData signData)
         {
-            User user;
-            bool userExists = false;
-
-            user = await UserService.GetUserByEmailAsync(signData.Email);
+            User user = await UserService.SignupAsync(signData);
             if (user == null)
-                user = await UserService.SignupAsync(signData);
-            else
+                return Problem("No user was created");
+            else if (user.Email == null)
                 return Conflict("Account already exists");
 
             Task task = UserService.SendVerificationMailAsync(user);
 
-            if (userExists)
-                return Ok("Verification mail sent again. Check mail");
-            else
-                return Ok("Check for verification mail");
+            return Ok("Check for verification mail");
         }
 
 
@@ -122,7 +128,7 @@ namespace DBRuns.Controllers
         // POST: api/Users/SignIn
         [HttpPost("[action]")]
         [AllowAnonymous]
-        public async Task<ActionResult<User>> SignIn(SignData signData)
+        public async Task<IActionResult> SignIn(SignData signData)
         {
             if (!ModelState.IsValid)
                 return BadRequest();
@@ -144,7 +150,7 @@ namespace DBRuns.Controllers
                 identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
                 identity.AddClaim(new Claim(ClaimTypes.Role, user.Role));
                 HttpContext.User = new ClaimsPrincipal(identity);
-                return NoContent();
+                return Ok();
             }
         }
 
@@ -153,7 +159,7 @@ namespace DBRuns.Controllers
         // POST: api/Users/SignIn
         [HttpPost("[action]")]
         [AllowAnonymous]
-        public async Task<ActionResult<User>> ChangePassword(SignData signData)
+        public async Task<IActionResult> ChangePassword(SignData signData)
         {
             if (!ModelState.IsValid)
                 return BadRequest();
@@ -169,8 +175,11 @@ namespace DBRuns.Controllers
             else
             {
                 user.Password = signData.NewPassword;
-                await UserService.UpdateUserAsync(user);
-                return Ok("Password has been changed");
+                int result = await UserService.UpdateUserAsync(user);
+                if(result == 1)
+                    return Ok("Password has been changed");
+                else
+                    return Problem("Password could not be changed");
             }
         }
 
@@ -184,21 +193,27 @@ namespace DBRuns.Controllers
                 return BadRequest();
 
             int result = await UserService.UpdateUserAsync(user);
-
-            return NoContent();
+            if (result == 1)
+                return Ok();
+            else if (result == -1)
+                return Conflict("EMail belonging to other account");
+            else
+                return Problem("User could not be updated");
         }
 
 
 
         // DELETE: api/Runs/5
         [HttpDelete("{id}")]
-        public async Task<ActionResult<User>> DeleteUser(Guid id)
+        public async Task<IActionResult> DeleteUser(Guid id)
         {
-            User user = await UserService.DeleteUserAsync(id);
-            if (user == null)
+            int result = await UserService.DeleteUserAsync(id);
+            if (result == 1)
+                return Ok();
+            else if (result == -1)
                 return NotFound();
             else
-                return user;
+                return Problem("No user deleted");
         }
 
     }

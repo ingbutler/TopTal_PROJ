@@ -176,10 +176,10 @@ namespace DBRuns.Services
 
 
 
-        public async Task DeleteRunByUserAsync(Guid userId)
+        public async Task<int> DeleteRunByUserAsync(Guid userId)
         {
             string sql = "delete from Runs where UserId = {0}";
-            await Context.Database.ExecuteSqlRawAsync(sql, userId);
+            return await Context.Database.ExecuteSqlRawAsync(sql, userId);
         }
 
 

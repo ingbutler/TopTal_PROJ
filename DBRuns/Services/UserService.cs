@@ -32,8 +32,6 @@ namespace DBRuns.Services
 
 
 
-        #region DATA ACCESS LAYER
-
         public async Task<ItemList<User>> GetUserAsync(string filter, int itemsPerPage, int pageNumber)
         {
             if (itemsPerPage == 0)
@@ -105,6 +103,10 @@ namespace DBRuns.Services
 
         public async Task<int> InsertUserAsync(User user)
         {
+            User u = await GetUserByEmailAsync(user.Email);
+            if (u != null)
+                return -1;  // If email alreay exists
+
             user.Id = Guid.NewGuid();
 
             Context.Users.Add(user);
@@ -116,26 +118,32 @@ namespace DBRuns.Services
 
         public async Task<int> UpdateUserAsync(User user)
         {
-            Context.Entry(user).State = EntityState.Modified;
+            User u = await GetUserByEmailAsync(user.Email);
+            if (u != null)
+            {
+                if (u.Id != user.Id)
+                    return -1;  // If email alreay assigned to other user
 
+                Context.Entry(u).State = EntityState.Detached;  // To be able to attach user
+            }
+
+            Context.Entry(user).State = EntityState.Modified;
             return await Context.SaveChangesAsync();
         }
 
 
 
-        public async Task<User> DeleteUserAsync(Guid id)
+        public async Task<int> DeleteUserAsync(Guid id)
         {
             var user = await Context.Users.FindAsync(id);
             if (user == null)
-                return null;
+                return -1;
 
             // Bulk delete user's runs
             await RunService.DeleteRunByUserAsync(user.Id);
 
             Context.Users.Remove(user);
-            await Context.SaveChangesAsync();
-
-            return user;
+            return await Context.SaveChangesAsync();
         }
 
 
@@ -203,12 +211,7 @@ namespace DBRuns.Services
             return await Context.SaveChangesAsync();
         }
 
-        #endregion DATA ACCESS LAYER
 
-
-
-
-        #region BUSINESS LOGIC
 
         public async Task<User> SignupAsync(SignData signData)
         {
@@ -230,6 +233,11 @@ namespace DBRuns.Services
             int result = await InsertUserAsync(user);
             if (result == 1)
                 return user;
+            if (result == -1)
+            {
+                user.Email = null;
+                return user;
+            }
             else
                 return null;
         }
@@ -257,10 +265,6 @@ namespace DBRuns.Services
                 return user;
             }
         }
-
-
-        #endregion BUSINESS LOGIC
-
 
     }
 

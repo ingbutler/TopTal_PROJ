@@ -62,7 +62,9 @@ namespace DBRunsE2ETests
             User user;
 
 
-            bool appDebug = true;
+            //bool appDebug = true;
+            bool appDebug = false;
+
             if (appDebug)
                 Settings.AppUri = Settings.AppUriDebug;
             else
@@ -75,9 +77,6 @@ namespace DBRunsE2ETests
                 dbRuns = Process.Start(psi);
             }
 
-
-            //goto resumeHere;
-            //resumeHere
 
 
 
@@ -141,12 +140,7 @@ namespace DBRunsE2ETests
 
             #endregion FIRST USER SIGN-UP (ADMIN)
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -168,7 +162,7 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> ADMIN SIGNED IN");
             Console.WriteLine();
 
-            #endregion ADMIN SIGN-IN
+        #endregion ADMIN SIGN-IN
 
 
 
@@ -190,7 +184,6 @@ namespace DBRunsE2ETests
 
 
 
-
             #region ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT EMAIL
         
             Console.WriteLine("=====> ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT EMAIL");
@@ -208,12 +201,7 @@ namespace DBRunsE2ETests
 
             #endregion ADMIN SAVING THEIR OWN ACCOUNT WITH A DIFFERENT EMAIL
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -260,7 +248,7 @@ namespace DBRunsE2ETests
 
             #region NEW USER FAILS SIGN-IN
 
-            Console.WriteLine("=====> NEW USER FAILING SIGNIN");
+            Console.WriteLine("=====> NEW USER FAILING SIGNIN THREE TIMES");
             Console.WriteLine();
 
             body =
@@ -279,12 +267,7 @@ namespace DBRunsE2ETests
 
             #endregion NEW USER FAILS SIGN-IN
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -308,12 +291,7 @@ namespace DBRunsE2ETests
 
             #endregion NEW USER'S FURTHER SIGN-IN ATTEMPT
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -360,12 +338,7 @@ namespace DBRunsE2ETests
 
             #endregion ADMIN UNBLOCKING USER'S ACCOUNT
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -389,12 +362,7 @@ namespace DBRunsE2ETests
 
             #endregion NEW USER'S SUCCESSFUL SIGN-IN ATTEMPT
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -448,12 +416,7 @@ namespace DBRunsE2ETests
 
             #endregion ADMIN ADDING FIRST RUN TO FIRST USER
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -476,12 +439,7 @@ namespace DBRunsE2ETests
 
             #endregion ADMIN LISTING FIRST USER'S RUNS
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -508,12 +466,7 @@ namespace DBRunsE2ETests
 
             #endregion ADMIN CREATING MANAGER
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -538,12 +491,7 @@ namespace DBRunsE2ETests
 
             #endregion MANAGER CHANGING THEIR OWN PASSWORD
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -592,12 +540,7 @@ namespace DBRunsE2ETests
 
             #endregion MANAGER CREATING SECOND USER
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -630,12 +573,7 @@ namespace DBRunsE2ETests
 
             #endregion MANAGER UPDATING SECOND USER (setting IsVerified)
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -731,12 +669,7 @@ namespace DBRunsE2ETests
 
             #endregion SECOND USER POSTING THEIR OWN RUNS
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -832,12 +765,7 @@ namespace DBRunsE2ETests
 
             #endregion FIRST USER POSTING RUNS
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -847,7 +775,7 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> FIRST USER FILTERING RUNS WITH BAD FILTER - filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18') and time ne 3430");
             Console.WriteLine();
 
-            queryString = "filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18')) and time ne 3430";
+            queryString = "filter=(location eq 'Sesto Fiorentino,IT' OR (Date ge '2020-06-14' and DATE le '2020-06-18') and time ne 3430";
             response = await Utils.GetRequest("Runs", null, GetBearerTokenHeader(response), queryString);
 
             Console.WriteLine("=====> FIRST USER FILTERED RUNS WITH BAD FILTER");
@@ -891,12 +819,7 @@ namespace DBRunsE2ETests
 
             #endregion FIRST USER LISTING RUNS + REPORT
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -936,12 +859,7 @@ namespace DBRunsE2ETests
 
             #endregion MANAGER FILTERING USERS
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -970,21 +888,12 @@ namespace DBRunsE2ETests
             queryString = "eMail=" + Settings.SecondUserEmail;
             response = await Utils.GetRequest("Users", "GetUserByEmail", GetBearerTokenHeader(response), queryString);
             contentStr = await response.Content.ReadAsStringAsync();
-            user = JsonConvert.DeserializeObject<User>(contentStr);
-            if (user == null)
-            {
-                Console.WriteLine("=====> SECOND USER NO LONGER EXISTS");
-                Console.WriteLine();
-            }
+            Console.WriteLine("=====> SECOND USER NO LONGER EXISTS");
+            Console.WriteLine();
 
             #endregion MANAGER DELETING SECOND USER
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -1058,12 +967,7 @@ namespace DBRunsE2ETests
 
             #endregion MANAGER POSTING THEIR OWN RUNS
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -1108,12 +1012,7 @@ namespace DBRunsE2ETests
 
             #endregion ADMIN VIEWING USER'S REPORT
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -1166,12 +1065,7 @@ namespace DBRunsE2ETests
 
             #endregion ADMIN VIEWING USER'S REPORT
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -1218,12 +1112,7 @@ namespace DBRunsE2ETests
 
             #endregion ADMIN VIEWING USER'S REPORT
 
-            if (Settings.SingleStepExecution)
-            {
-                Console.WriteLine("Press any key to continue");
-                Console.WriteLine("");
-                Console.ReadKey();
-            }
+            SingleStep();
 
 
 
@@ -1240,7 +1129,7 @@ namespace DBRunsE2ETests
 
             response = await Utils.DeleteRequest("Runs", "DeleteByUser", user.Id.ToString(), GetBearerTokenHeader(response));
 
-            Console.WriteLine("=====> ADMIN BULK DELETING MANAGER'S REMAINING RUNS");
+            Console.WriteLine("=====> ADMIN BULK DELETED MANAGER'S REMAINING RUNS");
             Console.WriteLine();
 
             #endregion ADMIN BULK DELETING MANAGER'S REMAINING RUNS
@@ -1282,6 +1171,17 @@ namespace DBRunsE2ETests
             return new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("authorization", "Bearer " + token) };
         }
 
+
+
+        private static void SingleStep()
+        {
+            if (Settings.SingleStepExecution)
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.WriteLine("");
+                Console.ReadKey();
+            }
+        }
 
 
 

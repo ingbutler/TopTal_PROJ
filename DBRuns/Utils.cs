@@ -296,21 +296,6 @@ namespace DBRuns
             return newFilter;
         }
 
-
-
-        private static void AddParam(List<string> prms, string filter, int start, int end)
-        {
-            string prm = filter.Substring(start, end - start).Trim();
-            
-            // Removing single quotes
-            if (prm[0] == '\'')
-                prm = prm.Substring(1);
-            if (prm[prm.Length - 1] == '\'')
-                prm = prm.Substring(0, prm.Length - 1);
-
-            prms.Add(prm);
-        }
-
     }
 
 }
