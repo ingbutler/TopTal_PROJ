@@ -51,7 +51,7 @@ namespace DBRunsE2ETests
 
         static async Task Main(string[] args)
         {
-            HttpResponseMessage response;
+            HttpResponseMessage response = null;
 
             string queryString;
             string body;
@@ -62,8 +62,8 @@ namespace DBRunsE2ETests
             User user;
 
 
-            //bool appDebug = true;
-            bool appDebug = false;
+            bool appDebug = true;
+            //bool appDebug = false;
 
             if (appDebug)
                 Settings.AppUri = Settings.AppUriDebug;
@@ -162,7 +162,7 @@ namespace DBRunsE2ETests
             Console.WriteLine("=====> ADMIN SIGNED IN");
             Console.WriteLine();
 
-        #endregion ADMIN SIGN-IN
+            #endregion ADMIN SIGN-IN
 
 
 
@@ -181,6 +181,7 @@ namespace DBRunsE2ETests
             Console.WriteLine();
 
             #endregion ADMIN RETRIEVING THEIR OWN ACCOUNT
+
 
 
 

@@ -23,6 +23,8 @@ namespace DBRunsE2ETests
             client.DefaultRequestHeaders
                   .Accept
                   .Add(new MediaTypeWithQualityHeaderValue("application/json"));    //ACCEPT header
+
+            client.Timeout = Timeout.InfiniteTimeSpan;
         }
 
 
